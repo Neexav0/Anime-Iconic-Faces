@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Iconic Faces</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+ --bg:#04060d;
+ --bg2:#0b1220;
+ --accent:#ff4d6d;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+ font-family:"Space Grotesk",sans-serif;
+ overflow:hidden;
+ background:radial-gradient(circle at top,#0f172a,#05070d 70%);
+ color:#fff;
+ height:100vh;
+}
+#cursorGlow{
+ position:fixed;width:260px;height:260px;border-radius:50%;
+ background:radial-gradient(circle, rgba(255,77,109,.22), transparent 70%);
+ pointer-events:none;mix-blend-mode:screen;transform:translate(-50%,-50%);
+ filter:blur(35px);z-index:9;transition:background .4s;
+}
+#videoLayer{
+ position:fixed;inset:0;z-index:0;overflow:hidden;
+}
+#videoLayer video{
+ position:absolute;width:100%;height:100%;object-fit:cover;
+ opacity:0;transition:opacity .45s ease,filter .45s;
+ filter:blur(8px) saturate(1.1);
+}
+#videoLayer video.active{opacity:.2;}
+.texture{
+ position:fixed;inset:0;
+ background:
+ radial-gradient(circle at 20% 20%,rgba(255,255,255,.03),transparent 35%),
+ radial-gradient(circle at 80% 60%,rgba(255,180,200,.04),transparent 30%);
+ mix-blend-mode:screen;pointer-events:none;z-index:1;
+}
+#petals{position:fixed;inset:0;pointer-events:none;z-index:2}
+.petal{
+ position:absolute;width:10px;height:14px;
+ background:rgba(255,180,200,.35);
+ border-radius:60% 40% 70% 30%;
+ animation:fall linear infinite;
+}
+@keyframes fall{
+ from{transform:translateY(-10vh) rotate(0)}
+ to{transform:translateY(110vh) translateX(60px) rotate(360deg)}
+}
+main{position:relative;z-index:3;height:100vh}
+.hero{
+ position:absolute;top:40px;left:50%;transform:translateX(-50%);
+ text-align:center;opacity:0;animation:fadeDown 1.2s forwards;
+}
+.hero h1{
+ font-family:"Zen Antique",serif;
+ font-size:clamp(2.3rem,5vw,4.7rem);
+ letter-spacing:3px;
+}
+.hero p{opacity:.65;margin-top:10px}
+@keyframes fadeDown{
+ from{opacity:0;transform:translate(-50%,-25px)}
+ to{opacity:1;transform:translate(-50%,0)}
+}
+#names{position:relative;width:100%;height:100%}
+.name{
+ position:absolute;
+ font-family:"Zen Antique",serif;
+ cursor:pointer;
+ transition:.35s;
+ animation:float 7s ease-in-out infinite;
+ text-shadow:0 0 12px rgba(255,255,255,.05);
+}
+.name:hover,.name.active{
+ transform:scale(1.12) rotate(var(--rot));
+ color:var(--color);
+ text-shadow:0 0 25px var(--color),0 0 60px var(--color);
+}
+@keyframes float{
+ 0%,100%{transform:translateY(0) rotate(var(--rot))}
+ 50%{transform:translateY(-8px) rotate(var(--rot))}
+}
+#info{
+ position:fixed;bottom:35px;left:35px;
+ width:min(380px,88vw);
+ padding:22px;border-radius:22px;
+ background:rgba(8,12,22,.65);
+ backdrop-filter:blur(18px);
+ border:1px solid rgba(255,255,255,.08);
+ opacity:0;transform:translateY(25px);
+ transition:.35s;z-index:6;
+}
+#info.show{opacity:1;transform:translateY(0)}
+#info .series{color:#cbd5e1;margin:6px 0 12px}
+.badge{
+ display:inline-block;
+ padding:5px 12px;border-radius:999px;
+ background:rgba(255,255,255,.08);
+ margin-bottom:12px
+}
+.controls{
+ position:fixed;top:25px;right:25px;z-index:7;display:flex;gap:10px;
+}
+button{
+ background:rgba(255,255,255,.08);
+ color:#fff;border:none;padding:10px 14px;border-radius:999px;
+ backdrop-filter:blur(12px);cursor:pointer;
+}
+@media(max-width:768px){
+ #info{left:50%;bottom:18px;transform:translate(-50%,20px)}
+ #info.show{transform:translate(-50%,0)}
+}
+</style>
+</head>
+<body>
+
+<div id="videoLayer"></div>
+<div class="texture"></div>
+<div id="petals"></div>
+<div id="cursorGlow"></div>
+
+<main>
+<div class="hero">
+<h1>Iconic Faces</h1>
+<p>Hover or tap a name to awaken their world.</p>
+</div>
+
+<div id="names"></div>
+
+<div id="info">
+<h2 id="title"></h2>
+<div class="series" id="series"></div>
+<div class="badge" id="nick"></div>
+<p id="desc"></p>
+</div>
+
+<div class="controls">
+<button id="musicBtn">♫ Character Audio Off</button>
+</div>
+</main>
+
+
+
+<script>
+const characters=[
+{
+name:"Makima",series:"Chainsaw Man",nickname:"Control Devil",
+description:"A calm, hypnotic manipulator whose mysterious smile hides terrifying authority.",
+accent:"#ff3b5f",video:"videos/makima.mp4",x:15,y:22,size:"2.5rem",rot:"-8deg"
+},
+{
+name:"Mikasa Ackerman",series:"Attack on Titan",nickname:"The Strongest Soldier",
+description:"Silent, fiercely loyal, and one of humanity's deadliest warriors.",
+accent:"#d14b4b",video:"videos/mikasa.mp4",x:67,y:20,size:"2.2rem",rot:"6deg"
+},
+{
+name:"Nico Robin",series:"One Piece",nickname:"Devil Child",
+description:"An elegant archaeologist whose quiet intellect hides immense emotional depth.",
+accent:"#9b5cff",video:"videos/robin.mp4",x:28,y:63,size:"2.3rem",rot:"-5deg"
+},
+{
+name:"Hinata Hyuga",series:"Naruto",nickname:"The Sunflower Princess",
+description:"Gentle yet courageous, she grows into one of the Hidden Leaf's brightest spirits.",
+accent:"#b993ff",video:"videos/hinata.mp4",x:73,y:56,size:"2rem",rot:"8deg"
+},
+{
+name:"Waguri",series:"Oshi no Ko",nickname:"Golden Blossom",
+description:"A graceful presence whose warmth and quiet charm leave a lasting impression.",
+accent:"#ff8fb8",video:"videos/waguri.mp4",x:46,y:38,size:"2.6rem",rot:"-2deg"
+}
+];
+
+const names=document.getElementById("names");
+const panel=document.getElementById("info");
+const title=document.getElementById("title");
+const series=document.getElementById("series");
+const nick=document.getElementById("nick");
+const desc=document.getElementById("desc");
+const cursor=document.getElementById("cursorGlow");
+const videoLayer=document.getElementById("videoLayer");
+
+let activeVideo=null;
+
+characters.forEach((c,i)=>{
+ const el=document.createElement("div");
+ el.className="name";
+ el.style.left=c.x+"%";
+ el.style.top=c.y+"%";
+ el.style.fontSize=c.size;
+ el.style.setProperty("--rot",c.rot);
+ el.style.setProperty("--color",c.accent);
+ el.style.animationDelay=(i*.3)+"s";
+ el.textContent=c.name;
+ names.appendChild(el);
+
+ let vid=null;
+ if(c.video){
+   vid=document.createElement("video");
+   vid.src=c.video;
+   vid.loop=true;
+   vid.muted=false;
+   vid.volume=.72;
+   vid.setAttribute("playsinline","");
+   videoLayer.appendChild(vid);
+ }
+
+ function activate(){
+   document.querySelectorAll(".name").forEach(n=>n.classList.remove("active"));
+   el.classList.add("active");
+   document.documentElement.style.setProperty("--accent",c.accent);
+   cursor.style.background=`radial-gradient(circle, ${c.accent}44, transparent 70%)`;
+   title.textContent=c.name;
+   series.textContent=c.series;
+   nick.textContent=c.nickname;
+   desc.textContent=c.description;
+   panel.classList.add("show");
+   panel.style.borderColor=c.accent+"55";
+   if(activeVideo){activeVideo.classList.remove("active");activeVideo.pause();}
+   if(vid){
+      activeVideo=vid;
+      vid.classList.add("active");
+      vid.muted=!characterAudioOn;
+      vid.play().catch(()=>{});
+   }
+ }
+
+ function deactivate(){
+   el.classList.remove("active");
+   panel.classList.remove("show");
+   if(activeVideo){activeVideo.classList.remove("active");activeVideo.pause();}
+ }
+
+ el.addEventListener("mouseenter",activate);
+ el.addEventListener("mouseleave",deactivate);
+ el.addEventListener("click",e=>{
+   e.stopPropagation();
+   if(el.classList.contains("active"))deactivate();
+   else activate();
+ });
+});
+
+document.body.addEventListener("click",()=>{
+ document.querySelectorAll(".name").forEach(n=>n.classList.remove("active"));
+ panel.classList.remove("show");
+ if(activeVideo){activeVideo.classList.remove("active");activeVideo.pause();}
+});
+
+document.addEventListener("mousemove",e=>{
+ cursor.style.left=e.clientX+"px";
+ cursor.style.top=e.clientY+"px";
+});
+
+const petals=document.getElementById("petals");
+for(let i=0;i<42;i++){
+ const p=document.createElement("div");
+ p.className="petal";
+ p.style.left=Math.random()*100+"%";
+ p.style.animationDuration=10+Math.random()*12+"s";
+ p.style.animationDelay=Math.random()*-20+"s";
+ p.style.opacity=.2+Math.random()*.5;
+ petals.appendChild(p);
+}
+
+let characterAudioOn=false;
+const btn=document.getElementById("musicBtn");
+btn.onclick=(e)=>{
+ e.stopPropagation();
+ characterAudioOn=!characterAudioOn;
+ btn.textContent=characterAudioOn?"♫ Character Audio On":"♫ Character Audio Off";
+ if(activeVideo){
+   activeVideo.muted=!characterAudioOn;
+   if(characterAudioOn){activeVideo.play().catch(()=>{});}
+ }
+};
+</script>
+</body>
+</html>
