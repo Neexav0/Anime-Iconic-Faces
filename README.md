@@ -1,39 +1,35 @@
-# ✨ Iconic Faces
+# Iconic Faces — Anime Universe
 
-A small interactive web experiment featuring some iconic anime characters with cinematic backgrounds, animations, and character audio.
+A small, static anime character website split into separate HTML, CSS, and JavaScript files.
 
-> 🤖 **Made with the help of AI — purely for fun, experimentation, and curiosity.**
+## Project structure
 
-## 🌸 Features
+```text
+Iconic-Faces/
+├── index.html
+├── css/
+│   └── style.css
+├── js/
+│   └── script.js
+└── videos/
+    ├── makima.mp4
+    ├── mikasa.mp4
+    ├── yor.mp4
+    ├── shinobu.mp4
+    ├── mitsuri.mp4
+    ├── marin.mp4
+    ├── zoro.mp4
+    ├── robin.mp4
+    ├── hinata.mp4
+    └── waguri.mp4
+```
 
-* 🎬 Full-screen animated character backgrounds
-* ✨ Smooth animations and hover effects
-* 🎵 Character audio
-* 🖱️ Interactive character selection
-* 🌙 Cinematic dark UI
-* 📱 Responsive design
+## How to run
 
-## 🛠️ Built With
+1. Extract the ZIP.
+2. Keep your character videos in the `videos` folder using the filenames above.
+3. Open `index.html` in a modern browser, or open the folder in VS Code and run it with Live Server.
 
-* HTML5
-* CSS3
-* JavaScript
-* Google Fonts
-* AI assistance 🤖
+The ZIP does not contain the video files because they were not included in the uploaded source text. The website will still load, but the background videos will only play after you add your own matching video files.
 
-## 🚀 Run Locally
-
-1. Clone or download this repository.
-2. Open the project in **VS Code**.
-3. Run `index.html` using **Live Server**.
-4. Hover or tap a character name and explore!
-
-## 🎯 Why I Made This
-
-I wanted to experiment with **web animations, video backgrounds, UI effects, and JavaScript interactions** while having some fun with anime characters.
-
-This isn't meant to be a serious production project — it's simply something I created out of **curiosity and the desire to try something new.**
-
----
-
-⭐ If you like the project, feel free to star the repository!
+Google Fonts are loaded from the internet, so an internet connection is needed for those fonts.
