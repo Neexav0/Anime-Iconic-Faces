@@ -7,7 +7,8 @@ A small, static anime character website split into separate HTML, CSS, and JavaS
 ```text
 Iconic-Faces/
 ├── index.html
-├── style.css
+├── css/
+│   └── style.css
 ├── js/
 │   └── script.js
 └── videos/

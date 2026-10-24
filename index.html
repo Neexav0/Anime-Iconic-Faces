@@ -1,47 +1,49 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Iconic Faces | Anime Universe</title>
+    <title>Iconic Faces | Anime Universe</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Zen+Antique&family=Space+Grotesk:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/jpg" href="favicon.jpg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
 
-    <link rel="stylesheet" href="style.css">
+  <body>
+    <div id="videoLayer"></div>
+    <div class="texture"></div>
+    <div id="petals"></div>
+    <div id="cursorGlow"></div>
 
-</head>
+    <main>
+      <header class="hero">
+        <h1>Iconic Faces</h1>
+        <p>Hover or tap a name to awaken their world.</p>
+      </header>
 
-<body>
-  <div id="videoLayer"></div>
-  <div class="texture"></div>
-  <div id="petals"></div>
-  <div id="cursorGlow"></div>
+      <div id="names" aria-label="Anime characters"></div>
 
-  <main>
-    <header class="hero">
-      <h1>Iconic Faces</h1>
-      <p>Hover or tap a name to awaken their world.</p>
-    </header>
+      <section id="info" aria-live="polite" aria-atomic="true">
+        <h2 id="title"></h2>
+        <div class="series" id="series"></div>
+        <div class="badge" id="nick"></div>
+        <p id="desc"></p>
+      </section>
 
-    <div id="names" aria-label="Anime characters"></div>
+      <div class="controls">
+        <button id="musicBtn" type="button" aria-pressed="false">
+          ♫ Character Audio Off
+        </button>
+      </div>
+    </main>
 
-    <section id="info" aria-live="polite" aria-atomic="true">
-      <h2 id="title"></h2>
-      <div class="series" id="series"></div>
-      <div class="badge" id="nick"></div>
-      <p id="desc"></p>
-    </section>
-
-    <div class="controls">
-      <button id="musicBtn" type="button" aria-pressed="false">
-        ♫ Character Audio Off
-      </button>
-    </div>
-  </main>
-
-    <script src="js/script.js" defer></script>
-</body>
+    <script src="script.js" defer></script>
+  </body>
 </html>
