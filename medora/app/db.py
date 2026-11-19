@@ -27,6 +27,9 @@ elif os.getenv("VERCEL"):
     _kwargs = {"poolclass": NullPool}
 else:
     _kwargs = {"pool_pre_ping": True, "pool_recycle": 1800}
+if DATABASE_URL.startswith("postgresql+psycopg"):
+    # Neon's pooled URL runs PgBouncer in transaction mode: no server-side prepared statements.
+    _kwargs["connect_args"] = {"prepare_threshold": None}
 engine = create_engine(DATABASE_URL, **_kwargs)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
