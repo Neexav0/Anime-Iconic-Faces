@@ -3,9 +3,15 @@
     "rule_id": "R-DUP-001",
     "type": "duplicate_ingredient",
     "params": {},
-    "sources": ["PACK-COMP", "CAT-MEDORA"],
+    "sources": [
+      "PACK-COMP",
+      "CAT-MEDORA"
+    ],
     "scope": "Same active ingredient found in two or more confirmed medicines.",
-    "title": {"en": "Same ingredient in more than one medicine", "hi": "एक ही दवा-घटक एक से ज़्यादा दवाओं में"},
+    "title": {
+      "en": "Same ingredient in more than one medicine",
+      "hi": "एक ही दवा-घटक एक से ज़्यादा दवाओं में"
+    },
     "message": {
       "en": "{ingredient} is in {count} of these medicines: {entries}. Taking the same ingredient from more than one product can add up. Review with a pharmacist.",
       "hi": "{ingredient} इन {count} दवाओं में है: {entries}। एक ही घटक कई दवाओं से लेने पर उसकी मात्रा बढ़ सकती है। फ़ार्मासिस्ट से जाँच करवाएँ।"
@@ -13,15 +19,27 @@
     "simple": {
       "en": "{entries} contain the same medicine: {ingredient}. Ask your pharmacist before taking them together.",
       "hi": "{entries} में एक ही दवा है: {ingredient}। इन्हें साथ लेने से पहले अपने फ़ार्मासिस्ट से पूछें।"
+    },
+    "question": {
+      "en": "Which of my medicines contain {ingredient}?",
+      "hi": "मेरी किन दवाओं में {ingredient} है?"
     }
   },
   {
     "rule_id": "R-CLS-NSAID",
     "type": "class_multiple",
-    "params": {"class": "nsaid", "min_distinct": 2},
-    "sources": ["DM-NSAID-OTC"],
+    "params": {
+      "class": "nsaid",
+      "min_distinct": 2
+    },
+    "sources": [
+      "DM-NSAID-OTC"
+    ],
     "scope": "Two or more different NSAID pain relievers (aspirin counted only at 300 mg or more; low-dose aspirin excluded).",
-    "title": {"en": "More than one NSAID pain reliever", "hi": "एक से ज़्यादा NSAID दर्द-निवारक"},
+    "title": {
+      "en": "More than one NSAID pain reliever",
+      "hi": "एक से ज़्यादा NSAID दर्द-निवारक"
+    },
     "message": {
       "en": "More than one anti-inflammatory pain reliever (NSAID) was found: {items}. NSAID labels warn that the chance of stomach bleeding is higher when taken with other NSAIDs. Review with a pharmacist.",
       "hi": "एक से ज़्यादा NSAID दर्द-निवारक मिले: {items}। NSAID लेबल चेतावनी देते हैं कि दूसरे NSAID के साथ लेने पर पेट में रक्तस्राव का खतरा बढ़ता है। फ़ार्मासिस्ट से जाँच करवाएँ।"
@@ -29,15 +47,32 @@
     "simple": {
       "en": "You have more than one painkiller of the same kind: {items}. Ask your pharmacist before taking them together.",
       "hi": "आपके पास एक ही तरह के एक से ज़्यादा दर्द-निवारक हैं: {items}। इन्हें साथ लेने से पहले अपने फ़ार्मासिस्ट से पूछें।"
+    },
+    "question": {
+      "en": "Can I take {items} together?",
+      "hi": "क्या मैं {items} साथ ले सकता/सकती हूँ?"
     }
   },
   {
     "rule_id": "R-BLEED-01",
     "type": "class_pair",
-    "params": {"class_a": "anticoagulant", "class_b": ["nsaid", "antiplatelet"]},
-    "sources": ["DM-WARFARIN", "DM-APIXABAN", "DM-NSAID-OTC"],
+    "params": {
+      "class_a": "anticoagulant",
+      "class_b": [
+        "nsaid",
+        "antiplatelet"
+      ]
+    },
+    "sources": [
+      "DM-WARFARIN",
+      "DM-APIXABAN",
+      "DM-NSAID-OTC"
+    ],
     "scope": "A blood thinner (warfarin, apixaban) together with an NSAID or antiplatelet medicine.",
-    "title": {"en": "Blood thinner with NSAID / antiplatelet", "hi": "खून पतला करने की दवा के साथ NSAID / एंटीप्लेटलेट"},
+    "title": {
+      "en": "Blood thinner with NSAID / antiplatelet",
+      "hi": "खून पतला करने की दवा के साथ NSAID / एंटीप्लेटलेट"
+    },
     "message": {
       "en": "{a} (a blood thinner) and {b} are both on this list. Their labels warn that this combination can increase the risk of bleeding. Review with a pharmacist.",
       "hi": "{a} (खून पतला करने की दवा) और {b} दोनों इस सूची में हैं। इनके लेबल चेतावनी देते हैं कि यह मेल रक्तस्राव का खतरा बढ़ा सकता है। फ़ार्मासिस्ट से जाँच करवाएँ।"
@@ -45,15 +80,30 @@
     "simple": {
       "en": "{a} thins the blood. Together with {b}, the chance of bleeding can go up. Ask your pharmacist.",
       "hi": "{a} खून पतला करती है। {b} के साथ लेने पर खून बहने का खतरा बढ़ सकता है। अपने फ़ार्मासिस्ट से पूछें।"
+    },
+    "question": {
+      "en": "Is it okay to take {b} while I am on {a}?",
+      "hi": "क्या {a} के साथ {b} लेना ठीक है?"
     }
   },
   {
     "rule_id": "R-BEERS-AH",
     "type": "elderly_listed",
-    "params": {"min_age": 65, "ingredients": ["chlorpheniramine", "diphenhydramine"]},
-    "sources": ["AGS-BEERS-2023"],
+    "params": {
+      "min_age": 65,
+      "ingredients": [
+        "chlorpheniramine",
+        "diphenhydramine"
+      ]
+    },
+    "sources": [
+      "AGS-BEERS-2023"
+    ],
     "scope": "Patient aged 65+ with a first-generation antihistamine explicitly named in the 2023 AGS Beers Criteria (only ingredients named there are checked).",
-    "title": {"en": "Listed in Beers Criteria for older adults", "hi": "बुज़ुर्गों के लिए Beers Criteria में सूचीबद्ध"},
+    "title": {
+      "en": "Listed in Beers Criteria for older adults",
+      "hi": "बुज़ुर्गों के लिए Beers Criteria में सूचीबद्ध"
+    },
     "message": {
       "en": "{items} is a first-generation antihistamine. The 2023 AGS Beers Criteria list it as potentially inappropriate for adults aged 65 and over. Review with a pharmacist.",
       "hi": "{items} पहली पीढ़ी का एंटीहिस्टामिन है। 2023 AGS Beers Criteria इसे 65 वर्ष से अधिक उम्र के लोगों के लिए संभावित रूप से अनुपयुक्त बताते हैं। फ़ार्मासिस्ट से जाँच करवाएँ।"
@@ -61,15 +111,25 @@
     "simple": {
       "en": "{items} is on a list of medicines that may not suit people over 65. Ask your pharmacist about it.",
       "hi": "{items} उन दवाओं की सूची में है जो 65 वर्ष से ऊपर के लोगों के लिए ठीक न हों। अपने फ़ार्मासिस्ट से इसके बारे में पूछें।"
+    },
+    "question": {
+      "en": "Is {items} right for someone my age?",
+      "hi": "क्या {items} मेरी उम्र के लिए ठीक है?"
     }
   },
   {
     "rule_id": "R-XCHK-001",
     "type": "composition_mismatch",
     "params": {},
-    "sources": ["PACK-COMP", "CAT-MEDORA"],
+    "sources": [
+      "PACK-COMP",
+      "CAT-MEDORA"
+    ],
     "scope": "The composition confirmed from the pack differs from Medora's catalogue entry for that brand.",
-    "title": {"en": "Pack and catalogue disagree", "hi": "पैक और कैटलॉग में अंतर"},
+    "title": {
+      "en": "Pack and catalogue disagree",
+      "hi": "पैक और कैटलॉग में अंतर"
+    },
     "message": {
       "en": "For {entry}, the pack composition ({printed}) does not match Medora's catalogue ({catalogue}). Please re-check the pack and review with a pharmacist.",
       "hi": "{entry} के लिए पैक पर लिखी संरचना ({printed}) Medora कैटलॉग ({catalogue}) से मेल नहीं खाती। कृपया पैक दोबारा देखें और फ़ार्मासिस्ट से जाँच करवाएँ।"
@@ -77,15 +137,24 @@
     "simple": {
       "en": "What we have for {entry} does not match our records. Please check the pack with your pharmacist.",
       "hi": "{entry} की जानकारी हमारे रिकॉर्ड से मेल नहीं खाती। कृपया पैक अपने फ़ार्मासिस्ट को दिखाएँ।"
+    },
+    "question": {
+      "en": "Is this the right composition for {entry}?",
+      "hi": "क्या {entry} की यह संरचना सही है?"
     }
   },
   {
     "rule_id": "R-ALG-001",
     "type": "allergy_match",
     "params": {},
-    "sources": ["LABEL-HYPERSENS"],
+    "sources": [
+      "LABEL-HYPERSENS"
+    ],
     "scope": "A confirmed medicine contains an ingredient the patient reported an allergy to, or one from the same documented allergy group (penicillins, NSAIDs, sulfonamides, macrolides).",
-    "title": {"en": "Matches a reported allergy", "hi": "बताई गई एलर्जी से मेल"},
+    "title": {
+      "en": "Matches a reported allergy",
+      "hi": "बताई गई एलर्जी से मेल"
+    },
     "message": {
       "en": "Patient-reported allergy: {allergy}. {entry} contains {ingredient}{group}. Product labels advise against use with a known allergy to an ingredient. Review with a pharmacist.",
       "hi": "मरीज़ द्वारा बताई गई एलर्जी: {allergy}। {entry} में {ingredient} है{group}। लेबल के अनुसार किसी घटक से एलर्जी होने पर इसका उपयोग नहीं करना चाहिए। फ़ार्मासिस्ट से जाँच करवाएँ।"
@@ -93,6 +162,10 @@
     "simple": {
       "en": "You told us you are allergic to {allergy}. {entry} contains {ingredient}{group}. Ask your pharmacist or doctor before taking it.",
       "hi": "आपने {allergy} से एलर्जी बताई है। {entry} में {ingredient} है{group}। इसे लेने से पहले अपने फ़ार्मासिस्ट या डॉक्टर से पूछें।"
+    },
+    "question": {
+      "en": "I am allergic to {allergy}. Can I take {entry}?",
+      "hi": "मुझे {allergy} से एलर्जी है। क्या मैं {entry} ले सकता/सकती हूँ?"
     }
   },
   {
@@ -101,7 +174,10 @@
     "params": {},
     "sources": [],
     "scope": "A symptom the patient reported is listed as a side effect in the product label of one of their confirmed medicines. This is not a diagnosis: the symptom may have another cause.",
-    "title": {"en": "Symptom listed as a side effect", "hi": "लक्षण, दुष्प्रभाव के रूप में सूचीबद्ध"},
+    "title": {
+      "en": "Symptom listed as a side effect",
+      "hi": "लक्षण, दुष्प्रभाव के रूप में सूचीबद्ध"
+    },
     "message": {
       "en": "Patient-reported symptom: {symptom}. It is listed as a side effect in the labels of: {items}. It may also have another cause. Review with a pharmacist.",
       "hi": "मरीज़ द्वारा बताया गया लक्षण: {symptom}। यह इनके लेबल में दुष्प्रभाव के रूप में सूचीबद्ध है: {items}। इसका कोई और कारण भी हो सकता है। फ़ार्मासिस्ट से जाँच करवाएँ।"
@@ -109,15 +185,24 @@
     "simple": {
       "en": "You mentioned \"{symptom}\". This is a known side effect of {items}. Tell your pharmacist or doctor, and do not change a prescribed medicine on your own.",
       "hi": "आपने \"{symptom}\" बताया। यह {items} का जाना-पहचाना दुष्प्रभाव है। अपने फ़ार्मासिस्ट या डॉक्टर को बताएँ, और डॉक्टर की लिखी दवा अपने आप न बदलें।"
+    },
+    "question": {
+      "en": "Could {items} be causing this: {symptom}?",
+      "hi": "क्या {items} की वजह से यह हो रहा है: {symptom}?"
     }
   },
   {
     "rule_id": "R-EXP-001",
     "type": "expired",
     "params": {},
-    "sources": ["PACK-EXP"],
+    "sources": [
+      "PACK-EXP"
+    ],
     "scope": "The expiry date printed on the pack (as confirmed by the user) is in the past.",
-    "title": {"en": "Past its expiry date", "hi": "समाप्ति तिथि निकल चुकी है"},
+    "title": {
+      "en": "Past its expiry date",
+      "hi": "समाप्ति तिथि निकल चुकी है"
+    },
     "message": {
       "en": "The pack of {entry} shows an expiry date of {expiry}, which has passed. Review with a pharmacist.",
       "hi": "{entry} के पैक पर समाप्ति तिथि {expiry} लिखी है, जो निकल चुकी है। फ़ार्मासिस्ट से जाँच करवाएँ।"
@@ -125,6 +210,10 @@
     "simple": {
       "en": "{entry} is past its expiry date ({expiry}). Show this pack to your pharmacist.",
       "hi": "{entry} की समाप्ति तिथि ({expiry}) निकल चुकी है। यह पैक अपने फ़ार्मासिस्ट को दिखाएँ।"
+    },
+    "question": {
+      "en": "My {entry} pack has expired. What should I do?",
+      "hi": "मेरे {entry} पैक की तारीख निकल गई है। मुझे क्या करना चाहिए?"
     }
   }
 ]

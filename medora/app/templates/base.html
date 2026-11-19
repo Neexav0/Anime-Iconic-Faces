@@ -5,29 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Medora · {{ t('app_tag') }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap">
-<link rel="stylesheet" href="/static/style.css?v=11">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700;800&family=Atkinson+Hyperlegible:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Sacramento&family=Kalam:wght@300;400&display=swap">
+<link rel="stylesheet" href="/static/style.css?v=30">
+<link rel="stylesheet" href="/static/v3.css?v=2">
+<meta name="theme-color" content="#0B3D33">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230b6b5d'/%3E%3Cpath d='M9 22V10l7 8 7-8v12' stroke='white' stroke-width='3' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
 </head>
-<body>
+<body class="{% block bodyclass %}{% endblock %}">
 {% set p = request.url.path %}
 {% set expert = p in ['/pharmacist', '/rules', '/catalogue', '/eval'] or p.startswith('/p/') %}
+<div class="hero-bg" aria-hidden="true"><span class="hb-c1"></span><span class="hb-c2"></span></div>
+<div class="page-blobs" aria-hidden="true"><i></i><i></i><i></i></div>
 <header class="top">
   <div class="wrap">
     <a class="logo" href="/" aria-label="Medora home">
-      <span class="logo-mark" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 32 32"><path d="M7 24V8l9 10 9-10v16" stroke="white" stroke-width="3.4" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg></span>
-      <span><b>MEDORA</b><small>{{ t('app_tag') }}</small></span>
+      <span><b>Medora</b><small>{{ t('app_tag') }}</small></span>
     </a>
-    {% if not p.startswith('/p/') %}
-    <nav class="modes" aria-label="View">
+    {% if p != '/welcome' and not p.startswith('/p/') %}
+    <div class="search" role="search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input type="search" id="q" placeholder="{{ 'ब्रांड या घटक से खोजें' if lang == 'hi' else 'Search by brand or ingredient' }}" aria-label="{{ 'दवा खोजें' if lang == 'hi' else 'Search medicines' }}" autocomplete="off">
+      <div class="search-results" id="q-results" role="listbox" hidden></div>
+    </div>
+    <nav class="seg modes" aria-label="View">
       <a href="/" class="{{ 'on' if not expert }}">{{ t('mode_patient') }}</a>
       <a href="/pharmacist" class="{{ 'on' if expert }}">{{ t('mode_pharmacist') }}</a>
     </nav>
     {% endif %}
     <div class="prefs">
-      <a class="chip-btn {{ 'on' if lang == 'en' }}" href="/settings?lang=en&back={{ p }}" lang="en">EN</a>
-      <a class="chip-btn {{ 'on' if lang == 'hi' }}" href="/settings?lang=hi&back={{ p }}" lang="hi">हिंदी</a>
-      <a class="chip-btn {{ 'on' if large }}" href="/settings?large={{ '0' if large else '1' }}&back={{ p }}" aria-label="{{ t('large_text') }}">A<span style="font-size:1.25em">A</span></a>
+      <div class="seg">
+        <a class="{{ 'on' if lang == 'en' }}" href="/settings?lang=en&back={{ p }}" lang="en">EN</a>
+        <a class="{{ 'on' if lang == 'hi' }}" href="/settings?lang=hi&back={{ p }}" lang="hi">हिंदी</a>
+      </div>
+      <a class="chip-btn {{ 'on' if large }}" href="/settings?large={{ '0' if large else '1' }}&back={{ p }}" aria-label="{{ t('large_text') }}">Aa</a>
+      {% if p != '/welcome' and not p.startswith('/p/') and request.cookies.get('pid') %}
+      <form method="post" action="/logout" class="who"><button type="submit" class="chip-btn" title="{{ 'कोई और व्यक्ति' if lang == 'hi' else 'Switch person' }}" aria-label="{{ 'कोई और व्यक्ति' if lang == 'hi' else 'Switch person' }}">⇄</button></form>
+      {% endif %}
     </div>
   </div>
 </header>
@@ -55,7 +68,16 @@
     </details>
   </div>
 </footer>
-<script src="/static/app.js?v=11" defer></script>
+{% if p != '/welcome' and not p.startswith('/p/') %}
+<nav class="tabbar" aria-label="Main">
+  <a href="/" class="{{ 'on' if p == '/' }}"><span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>{{ t('nav_passport') }}</a>
+  <a href="/add" class="add {{ 'on' if p.startswith('/add') or p.startswith('/confirm') }}"><span class="ti"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>{{ t('nav_add') }}</a>
+  <a href="/share" class="{{ 'on' if p == '/share' }}"><span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM17 17h4v4h-4"/></svg></span>{{ t('mode_pharmacist') }}</a>
+  <a href="/health" class="{{ 'on' if p == '/health' }}"><span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3v6a5 5 0 0 0 10 0V3M11 14v2a4 4 0 0 0 8 0v-2"/><circle cx="19" cy="12" r="2"/></svg></span>{{ 'स्वास्थ्य' if lang == 'hi' else 'Health' }}</a>
+</nav>
+{% endif %}
+<script src="/static/app.js?v=30" defer></script>
+<script src="/static/v3.js?v=1" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

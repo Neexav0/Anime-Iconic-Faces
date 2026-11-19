@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block bodyclass %}welcome{% endblock %}
+{% block width %}welcome-wrap{% endblock %}
+{% block content %}
+<section class="intro" id="intro">
+  {% with uid='w', size='xl' %}{% include "_namaste.html" %}{% endwith %}
+  <p class="intro-sub">{{ 'आपका दवा सुरक्षा पासपोर्ट' if lang == 'hi' else 'Your medication safety passport' }}</p>
+</section>
+
+<form class="signin card" method="post" action="/welcome" id="signin" autocomplete="off">
+  <div class="signin-head">
+    <span class="logo-mark big" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 32 32"><path d="M7 24V8l9 10 9-10v16" stroke="white" stroke-width="3.4" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg></span>
+    <div>
+      <h1>{{ 'Medora में आपका स्वागत है' if lang == 'hi' else 'Welcome to Medora' }}</h1>
+      <p class="muted">{{ 'शुरू करने से पहले, हमें बताइए आपको क्या कहकर बुलाएँ।' if lang == 'hi' else 'Before we begin, tell us what to call you.' }}</p>
+    </div>
+  </div>
+  {% if request.query_params.get('error') == 'name' %}<div class="banner" role="alert">{{ 'कृपया अपना नाम लिखें।' if lang == 'hi' else 'Please type your name.' }}</div>{% endif %}
+  <label class="field"><span>{{ 'आपका नाम' if lang == 'hi' else 'Your name' }}</span>
+    <input type="text" name="name" required maxlength="120" value="{{ current.name if current else '' }}" placeholder="{{ 'जैसे कमला देवी' if lang == 'hi' else 'e.g. Kamla Devi' }}" id="name-in">
+  </label>
+  <label class="field"><span>{{ 'उम्र (वैकल्पिक)' if lang == 'hi' else 'Age (optional)' }}</span>
+    <input type="number" name="age" min="1" max="124" value="{{ current.age if current and current.age else '' }}" placeholder="72">
+  </label>
+  <fieldset class="lang-pick">
+    <legend>{{ 'भाषा' if lang == 'hi' else 'Language' }}</legend>
+    <label class="tile"><input type="radio" name="lang" value="en" {{ 'checked' if lang != 'hi' }}><span>English</span></label>
+    <label class="tile"><input type="radio" name="lang" value="hi" {{ 'checked' if lang == 'hi' }}><span>हिंदी</span></label>
+  </fieldset>
+  <button class="btn big" type="submit">{{ 'आगे बढ़ें' if lang == 'hi' else 'Continue' }} →</button>
+  <p class="small muted" style="margin:0">🔒 {{ 'आपकी जानकारी केवल इस डिवाइस के Medora में रहती है।' if lang == 'hi' else 'Your details stay in Medora on this device. No password needed.' }}</p>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+// Play the intro once per session; afterwards show the form straight away.
+(() => {
+  const intro = document.getElementById('intro'), form = document.getElementById('signin');
+  let seen = false; try { seen = sessionStorage.getItem('medora-intro') === '1'; } catch (e) {}
+  const reveal = () => {
+    document.body.classList.add('intro-done');
+    setTimeout(() => { const n = document.getElementById('name-in'); if (n && !n.value) n.focus({ preventScroll: true }); }, 900);
+  };
+  scrollTo(0, 0);
+  if (seen || matchMedia('(prefers-reduced-motion: reduce)').matches) { intro.classList.add('static'); reveal(); return; }
+  document.fonts.ready.then(() => {
+    intro.classList.add('play');
+    setTimeout(reveal, 3300);
+    try { sessionStorage.setItem('medora-intro', '1'); } catch (e) {}
+  });
+  intro.addEventListener('click', reveal);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{# Hand-written "Namaste" (Apple "hello"-style): the outline is traced by the pen, then a mask wipes the ink in. #}
+{% set word = ('नमस्ते' if lang == 'hi' else 'Namaste') ~ (',' if comma else '') %}
+<svg class="namaste {{ 'hi' if lang == 'hi' }} {{ size or '' }}" viewBox="0 0 900 300" role="img" aria-label="{{ word }}">
+  <defs>
+    <linearGradient id="ink-{{ uid }}" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#d9fff3"/><stop offset="1" stop-color="#ffd9a8"/>
+    </linearGradient>
+    <mask id="wipe-{{ uid }}"><rect class="wipe" x="0" y="0" width="0" height="300" fill="#fff"/></mask>
+  </defs>
+  <text class="trace" x="20" y="215" stroke="url(#ink-{{ uid }})">{{ word }}</text>
+  <text class="ink" x="20" y="215" fill="url(#ink-{{ uid }})" mask="url(#wipe-{{ uid }})">{{ word }}</text>
+</svg>

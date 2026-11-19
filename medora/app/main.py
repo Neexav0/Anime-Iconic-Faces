@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextvars
 import io
+import zlib
 import os
 import re
 import secrets
@@ -65,12 +67,44 @@ def ctx(request: Request, **kw):
             "large": request.cookies.get("large") == "1", "db_kind": DATABASE_URL.split(":")[0].split("+")[0], **kw}
 
 
+CURRENT_PID: contextvars.ContextVar[int | None] = contextvars.ContextVar("current_pid", default=None)
+PATIENT_PAGES = ("/", "/add", "/manual", "/confirm", "/extract", "/strip-qr", "/entries", "/drafts", "/health", "/share",
+                 "/pharmacist", "/passport.pdf", "/patient")
+
+
+class PatientMiddleware:
+    """Pure ASGI: reads the 'pid' cookie into a contextvar; sends people without one to /welcome."""
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        req = Request(scope)
+        raw = req.cookies.get("pid", "")
+        pid = int(raw) if raw.isdigit() else None
+        path = scope["path"]
+        needs = path == "/" or any(path.startswith(x + "/") or path == x for x in PATIENT_PAGES[1:])
+        if needs and pid is None:
+            return await RedirectResponse("/welcome", status_code=303)(scope, receive, send)
+        token = CURRENT_PID.set(pid)
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            CURRENT_PID.reset(token)
+
+
+app.add_middleware(PatientMiddleware)
+
+
 def get_patient(s) -> Patient:
-    return s.scalar(select(Patient).order_by(Patient.id).limit(1))
+    pid = CURRENT_PID.get()
+    p = s.get(Patient, pid) if pid else None
+    return p or s.scalar(select(Patient).order_by(Patient.id).limit(1))
 
 
-def current_state(s, lang: str):
-    patient = get_patient(s)
+def current_state(s, lang: str, patient: Patient | None = None):
+    patient = patient or get_patient(s)
     entries = list(s.scalars(select(Entry).where(Entry.patient_id == patient.id).order_by(Entry.id)))
     result = evaluate([e.as_engine_dict() for e in entries], patient.as_engine_dict(), KB, lang=lang)
     return patient, entries, result
@@ -115,7 +149,7 @@ def build_view(entries, result):
         for key, label, strength, known in resolved[e.id]:
             others = [n for n in owners[key] if n != e.name]
             tags[e.id].append({"label": label, "strength": strength, "kind": "dup" if key in dup_keys else ("" if known else "unk"),
-                               "also": others})
+                               "also": others, "hue": zlib.crc32(key.encode()) % 6})
             links.append([e.id, key])
             ings[key] = {"key": key, "label": label, "shared": key in dup_keys}
     today = datetime.now()
@@ -152,6 +186,46 @@ def qr_svg(data: str) -> str:
     return re.sub(r"<\?xml[^>]*\?>", "", svg).replace("<svg ", '<svg role="img" aria-label="QR code" ', 1)
 
 
+# ---------------------------------------------------------------- welcome / sign-in
+@app.get("/welcome", response_class=HTMLResponse)
+def welcome(request: Request):
+    with SessionLocal() as s:
+        pid = CURRENT_PID.get()
+        current = s.get(Patient, pid) if pid else None
+    return templates.TemplateResponse(request, "welcome.html", ctx(request, current=current))
+
+
+@app.post("/welcome")
+def welcome_submit(name: str = Form(""), age: str = Form(""), lang: str = Form("en")):
+    name = " ".join(name.split())[:120]
+    if not name:
+        return RedirectResponse("/welcome?error=name", status_code=303)
+    age_v = int(age) if age.strip().isdigit() and 0 < int(age) < 125 else None
+    with SessionLocal() as s:
+        p = next((x for x in s.scalars(select(Patient)) if (x.name or "").strip().lower() == name.lower()), None)
+        if not p:
+            # Reuse the unnamed starter record if it exists, otherwise create a new person.
+            p = s.scalar(select(Patient).where(Patient.name == "").limit(1)) or Patient()
+            p.name = name
+            s.add(p)
+        if age_v:
+            p.age = age_v
+        s.commit()
+        pid = p.id
+    resp = RedirectResponse("/?welcome=1", status_code=303)
+    resp.set_cookie("pid", str(pid), max_age=31536000, samesite="lax", httponly=True)
+    if lang in ("en", "hi"):
+        resp.set_cookie("lang", lang, max_age=31536000, samesite="lax")
+    return resp
+
+
+@app.post("/logout")
+def logout():
+    resp = RedirectResponse("/welcome", status_code=303)
+    resp.delete_cookie("pid")
+    return resp
+
+
 # ---------------------------------------------------------------- patient pages
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, added: int | None = None):
@@ -164,8 +238,19 @@ def home(request: Request, added: int | None = None):
     return templates.TemplateResponse(request, "home.html", ctx(
         request, patient=patient, entries=entries, result=result, tags=tags, graph=graph, expiry=expiry,
         review=review if review and review.reviewed_at else None, added_entry=added_entry,
-        uses=uses_view(entries, lang), allergy_labels=allergy_labels(patient, lang),
+        uses=uses_view(entries, lang), allergy_labels=allergy_labels(patient, lang), today=today_label(lang),
         symptom_labels=[KB.symptom_label(c, lang) for c in patient.symptoms or [] if c in KB.symptom_by_code]))
+
+
+HI_DAYS = ["सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार", "रविवार"]
+HI_MONTHS = ["जनवरी", "फ़रवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"]
+
+
+def today_label(lang: str) -> str:
+    d = datetime.now()
+    if lang == "hi":
+        return f"{HI_DAYS[d.weekday()]}, {d.day} {HI_MONTHS[d.month - 1]}"
+    return d.strftime("%A, %d %B").upper()
 
 
 def allergy_labels(patient, lang: str) -> list[str]:
@@ -260,9 +345,9 @@ def strip_qr(text: str = Form("")):
 
 
 @app.get("/manual")
-def manual():
+def manual(q: str = ""):
     with SessionLocal() as s:
-        d = Draft(origin="manual", extracted=None)
+        d = Draft(origin="manual", extracted={"brand_as_printed": q.strip()[:80]} if q.strip() else None)
         s.add(d)
         s.commit()
         DRAFT_IMAGES.pop(d.id, None)
@@ -409,7 +494,7 @@ def review_page(request: Request, token: str, saved: int = 0):
         review = s.scalar(select(Review).where(Review.token == token))
         if not review:
             return HTMLResponse("<h1>This review link is not valid.</h1>", status_code=404)
-        patient, entries, result = current_state(s, "en")
+        patient, entries, result = current_state(s, "en", s.get(Patient, review.patient_id))
     tags, graph, expiry = build_view(entries, result)
     return templates.TemplateResponse(request, "review.html", ctx(
         request, review=review, patient=patient, entries=entries, result=result, tags=tags, expiry=expiry, saved=saved, kb=KB,
@@ -424,7 +509,7 @@ async def save_review(request: Request, token: str):
         review = s.scalar(select(Review).where(Review.token == token))
         if not review:
             return Response(status_code=404)
-        _, _, result = current_state(s, "en")
+        _, _, result = current_state(s, "en", s.get(Patient, review.patient_id))
         items = {}
         for a in result["alerts"]:
             k = a["key"]
@@ -474,9 +559,11 @@ def settings(request: Request, lang: str | None = None, large: str | None = None
 
 # ---------------------------------------------------------------- JSON helpers for the confirm screen
 @app.get("/api/brands")
-def api_brands(q: str = ""):
+def api_brands(request: Request, q: str = ""):
+    lang = request.cookies.get("lang", "en")
     return JSONResponse([
         {"id": b["id"], "name": b["name"], "manufacturer": b["manufacturer"], "form": b["form"], "score": b["score"],
+         "uses": KB.uses(b["ingredients"][0]["canonical"], lang) if b["ingredients"] else None,
          "ingredients": [{"display": KB.display(i["canonical"]), "strength": i["strength"]} for i in b["ingredients"]]}
         for b in KB.brand_matcher.candidates(q[:80])])
 

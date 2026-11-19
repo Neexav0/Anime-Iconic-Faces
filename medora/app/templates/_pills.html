@@ -1,0 +1,39 @@
+{# Glossy 3D pills that swirl out from the centre and pop toward the viewer, then float. Pure SVG + CSS. #}
+<div class="pill-art" aria-hidden="true" data-tilt>
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <linearGradient id="g-blue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fdcff"/><stop offset=".42" stop-color="#3597ee"/><stop offset="1" stop-color="#1a58b4"/></linearGradient>
+      <linearGradient id="g-blue2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cc8ff"/><stop offset=".5" stop-color="#2b86e3"/><stop offset="1" stop-color="#174f9f"/></linearGradient>
+      <linearGradient id="g-white" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".6" stop-color="#eef3f7"/><stop offset="1" stop-color="#c9d5df"/></linearGradient>
+      <radialGradient id="g-dot" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#bfe6ff"/><stop offset=".5" stop-color="#3a99ee"/><stop offset="1" stop-color="#1a5cb5"/></radialGradient>
+      <symbol id="cap-blue" viewBox="0 0 200 80"><rect x="2" y="2" width="196" height="76" rx="38" fill="url(#g-blue)"/><path d="M100 2v76" stroke="#174f9f" stroke-opacity=".45" stroke-width="2"/><rect x="24" y="12" width="150" height="13" rx="6.5" fill="#fff" opacity=".5"/><rect x="40" y="58" width="120" height="6" rx="3" fill="#0d3a7a" opacity=".18"/></symbol>
+      <symbol id="cap-mix" viewBox="0 0 200 80"><rect x="2" y="2" width="196" height="76" rx="38" fill="url(#g-blue2)"/><path d="M40 2h60v76H40A38 38 0 0 1 40 2z" fill="url(#g-white)"/><rect x="24" y="12" width="150" height="12" rx="6" fill="#fff" opacity=".55"/></symbol>
+      <symbol id="tab-white" viewBox="0 0 200 80"><rect x="2" y="2" width="196" height="76" rx="38" fill="url(#g-white)"/><rect x="26" y="13" width="140" height="12" rx="6" fill="#fff"/><path d="M100 18v44" stroke="#b9c7d3" stroke-width="3" stroke-linecap="round"/></symbol>
+      <symbol id="round-white" viewBox="0 0 80 80"><circle cx="40" cy="40" r="37" fill="url(#g-white)"/><ellipse cx="32" cy="26" rx="18" ry="9" fill="#fff" opacity=".9"/></symbol>
+      <symbol id="dot" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="url(#g-dot)"/></symbol>
+    </defs>
+  </svg>
+  {% set pills = [
+    ('cap-blue', 50, 46, 300, -35, 0.05, 'hero-pill'),
+    ('cap-blue', 8, 6, 120, -58, 0.25, ''),
+    ('cap-mix', 80, 72, 130, -22, 0.35, ''),
+    ('cap-blue', 72, 30, 70, 62, 0.45, ''),
+    ('tab-white', 4, 70, 104, -22, 0.3, ''),
+    ('tab-white', 78, 6, 92, -36, 0.4, ''),
+    ('tab-white', 30, 4, 66, 74, 0.5, ''),
+    ('tab-white', 58, 82, 70, 64, 0.55, ''),
+    ('round-white', 92, 34, 30, 0, 0.6, ''),
+    ('round-white', 20, 40, 26, 0, 0.62, ''),
+  ] %}
+  {% for sym, x, y, w, r, d, cls in pills %}
+  {% set h = (w * 0.4) if sym != 'round-white' else w %}
+  <span class="pz {{ cls }}" style="--x:{{ x }}%;--y:{{ y }}%;--w:{{ w }}px;--r:{{ r }}deg;--d:{{ d }}s;--dx:{{ (50 - x) * 4.6 }}px;--dy:{{ (50 - y) * 2.6 }}px">
+    <svg viewBox="{{ '0 0 80 80' if sym == 'round-white' else '0 0 200 80' }}" width="{{ w }}" height="{{ h|round(1) }}"><use href="#{{ sym }}"/></svg>
+  </span>
+  {% endfor %}
+  {% for x, y, s, d in [(12,28,12,0.7),(18,58,9,0.75),(26,22,7,0.8),(40,86,10,0.78),(64,14,8,0.82),(70,62,11,0.72),(86,58,9,0.85),(90,18,7,0.88),(46,10,6,0.9),(36,70,8,0.86),(82,88,7,0.9),(10,86,6,0.92)] %}
+  <span class="pz dotz" style="--x:{{ x }}%;--y:{{ y }}%;--w:{{ s }}px;--r:0deg;--d:{{ d }}s;--dx:{{ (50 - x) * 4.6 }}px;--dy:{{ (50 - y) * 2.6 }}px">
+    <svg viewBox="0 0 20 20" width="{{ s }}" height="{{ s }}"><use href="#dot"/></svg>
+  </span>
+  {% endfor %}
+</div>

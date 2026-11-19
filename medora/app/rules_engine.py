@@ -74,6 +74,7 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today
             "title": rule["title"].get(lang) or rule["title"]["en"],
             "message": _fmt(rule["message"].get(lang) or rule["message"]["en"], **fmt),
             "simple": _fmt(simple.get(lang) or simple["en"], **fmt),
+            "question": _fmt((rule.get("question") or simple).get(lang) or (rule.get("question") or simple)["en"], **fmt),
             "entry_ids": sorted(set(entry_ids)),
             "entries": [names[i] for i in sorted(set(entry_ids))],
             "evidence": evidence,
