@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% macro listen(target, t, label=None) -%}
+<button type="button" class="btn listen" data-speak="{{ target }}" data-label="{{ label or t('listen') }}" data-stop="{{ t('stop') }}">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+  <span class="lbl">{{ label or t('listen') }}</span>
+</button>
+{%- endmacro %}
+{% block content %}
+{% set n = result.alerts|length %}
+{% set notes = review['items'] if review else {} %}
+<div class="stack">
+
+  {% if added_entry %}
+  <div class="toast" role="status">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8fe0c4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+    <span>{{ t('added_toast') }}: {{ added_entry.name }} <span style="opacity:.75;font-weight:400">· {{ t('step_done') }} 3/3</span></span>
+  </div>
+  {% endif %}
+
+  <div class="greet">
+    <div>
+      <div class="muted small">{{ t('greet') }} 🙏</div>
+      <h1>{% if patient.name %}{{ patient.name }} {{ 'जी' if lang == 'hi' else 'ji' }}{% else %}{{ t('greet') }}{% endif %}</h1>
+    </div>
+    <details>
+      <summary>✎ {{ t('edit_details') }}</summary>
+      <form method="post" action="/patient">
+        <label>{{ t('name') }}<input type="text" name="name" value="{{ patient.name }}" style="width:220px" autocomplete="off"></label>
+        <label>{{ t('age') }}<input type="number" name="age" min="1" max="124" value="{{ patient.age or '' }}" style="width:110px"></label>
+        <button class="btn ghost" type="submit">{{ t('save') }}</button>
+      </form>
+    </details>
+  </div>
+
+  {# ---------------- the one answer that matters ---------------- #}
+  {% if not entries %}
+  <section class="status empty">
+    <div class="status-icon" style="margin:0 auto 12px;color:var(--teal)" aria-hidden="true">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.5 7.2l5 7.6" /></svg>
+    </div>
+    <h2>{{ t('welcome_title') }}</h2>
+    <p class="lead" style="margin:6px auto 18px">{{ t('welcome_sub') }}</p>
+    <a class="btn big" href="/add">📷 {{ t('nav_add') }}</a>
+  </section>
+  {% elif n %}
+  <section class="status warn" aria-labelledby="ask-h">
+    <div class="status-head">
+      <div class="status-icon" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      </div>
+      <h2 id="ask-h">{{ t('ask_title_1') if n == 1 else t('ask_title_n').replace('{n}', n|string) }}</h2>
+      {{ listen('#ask-h, .ask-text', t, t('listen_all')) }}
+    </div>
+    <ol class="asks">
+      {% for a in result.alerts %}
+      <li>
+        <span class="num" aria-hidden="true">{{ loop.index }}</span>
+        <div>
+          <p class="ask-text">{{ a.simple }}</p>
+          {% set r = notes.get(a.key) %}
+          {% if r and (r.done or r.note) %}
+          <div class="reviewed">✓ {{ t('reviewed_by') }}{% if r.note %}: <q>{{ r.note }}</q>{% endif %}</div>
+          {% endif %}
+        </div>
+        {{ listen(a.simple, t) }}
+      </li>
+      {% endfor %}
+    </ol>
+    {% if review %}
+    {% set stale = result.alerts|rejectattr('key', 'in', notes)|list %}
+    <div class="review-banner">✓ {{ t('reviewed_by') }}{% if review.reviewer %} · {{ review.reviewer }}{% endif %} · {{ review.reviewed_at.strftime('%d %b, %H:%M') }}{% if review.general_note %} — <span style="font-weight:400;color:var(--ink-2)">{{ review.general_note }}</span>{% endif %}</div>
+    {% if stale %}<div class="note" style="margin-top:10px">{{ 'आपकी सूची समीक्षा के बाद बदली है। कृपया अपने फ़ार्मासिस्ट को फिर से दिखाएँ।' if lang == 'hi' else 'Your list changed after this review. Please show your pharmacist again.' }}</div>{% endif %}
+    {% endif %}
+  </section>
+  {% else %}
+  <section class="status good">
+    <div class="status-head">
+      <div class="status-icon" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <h2 id="good-h">{{ t('all_good_title') }}</h2>
+        <p class="muted" id="good-s" style="margin:4px 0 0">{{ t('all_good_sub') }}</p>
+      </div>
+      {{ listen('#good-h, #good-s', t) }}
+    </div>
+    {% if review %}<div class="review-banner">✓ {{ t('reviewed_by') }}{% if review.reviewer %} · {{ review.reviewer }}{% endif %}{% if review.general_note %} — <span style="font-weight:400;color:var(--ink-2)">{{ review.general_note }}</span>{% endif %}</div>{% endif %}
+  </section>
+  {% endif %}
+
+  {# ---------------- two big actions ---------------- #}
+  {% if entries %}
+  <div class="actions">
+    <a class="action primary" href="/add">
+      <span class="ico" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7.5h3.5L8.5 4.5h7l2 3H21V19H3z"/><circle cx="12" cy="13" r="3.8"/></svg></span>
+      <span>{{ t('nav_add') }}<small>{{ t('step_photo') }} → {{ t('step_check') }} → {{ t('step_done') }}</small></span>
+    </a>
+    <a class="action secondary" href="/share">
+      <span class="ico" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 17h4v4h-4"/></svg></span>
+      <span>{{ t('show_pharmacist') }}<small>QR · PDF</small></span>
+    </a>
+  </div>
+  {% endif %}
+
+  {# ---------------- not assessed: gentle, never hidden ---------------- #}
+  {% if result.not_assessed %}
+  <div class="note">
+    <b>{{ t('couldnt_check') }}:</b> {{ result.not_assessed|map(attribute='entry')|join(', ') }}. {{ t('couldnt_check_sub') }}
+  </div>
+  {% endif %}
+
+  {# ---------------- medicines ---------------- #}
+  {% if entries %}
+  <section class="section">
+    <h2>{{ t('my_meds') }} <span class="muted" style="font-weight:400">· {{ entries|length }}</span></h2>
+    {% for e in entries %}
+    {% set dup = tags[e.id]|selectattr('kind', 'equalto', 'dup')|list %}
+    <div class="med {{ 'flag' if dup or (expiry.get(e.id) and expiry[e.id].expired) }} {{ 'new' if added_entry and added_entry.id == e.id }}">
+      <div class="pill-ico" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="8.5" width="19" height="7" rx="3.5" transform="rotate(-35 12 12)"/><path d="M9.6 7.4l4.8 9.2" transform="rotate(-2 12 12)"/></svg>
+      </div>
+      <div>
+        <h3>{{ e.name }}</h3>
+        <div class="meta">{{ e.form }}{% if e.note %}{{ ' · ' if e.form }}{{ e.note }}{% endif %}</div>
+        <div class="contains" aria-label="{{ t('contains') }}">
+          {% for tg in tags[e.id] %}
+          <span class="ing {{ tg.kind }}">{{ '⚠ ' if tg.kind == 'dup' }}{{ tg.label }}{% if tg.strength %} <small>{{ tg.strength }}</small>{% endif %}{% if tg.kind == 'dup' and tg.also %} <small>· {{ t('also_in') }} {{ tg.also|join(', ') }}</small>{% endif %}</span>
+          {% else %}
+          <span class="ing unk">?</span>
+          {% endfor %}
+        </div>
+        {% if expiry.get(e.id) %}
+        <div class="exp {{ 'bad' if expiry[e.id].expired }}">{{ ('⚠ ' ~ t('expired')) if expiry[e.id].expired else ('📅 ' ~ t('expires')) }} {{ expiry[e.id].label }}</div>
+        {% endif %}
+      </div>
+      <form method="post" action="/entries/{{ e.id }}/delete" onsubmit="return confirm('{{ t('remove') }} {{ e.name|e }}?')">
+        <button class="btn plain" type="submit" aria-label="{{ t('remove') }} {{ e.name }}">{{ t('remove') }}</button>
+      </form>
+    </div>
+    {% endfor %}
+  </section>
+
+  {% if graph.meds|length > 1 %}
+  <section class="section card map-card">
+    <h2 style="margin-bottom:4px">{{ t('connect_title') }}</h2>
+    <p class="muted small" style="margin:0 0 14px">{{ t('connect_sub') }}</p>
+    <div data-map="map-data" data-label="{{ t('connect_title') }}"></div>
+    <div class="legend"><span><i></i>{{ t('contains') }}</span><span><i class="s"></i>⚠ {{ t('alerts') }}</span></div>
+    <script type="application/json" id="map-data">{{ graph|tojson }}</script>
+  </section>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

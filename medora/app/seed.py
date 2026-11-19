@@ -1,5 +1,5 @@
 """Create tables, seed the catalogue into the DB (idempotent) and build the runtime KB from the DB."""
-from sqlalchemy import select
+from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import selectinload
 
 from .db import Base, SessionLocal, engine
@@ -8,8 +8,21 @@ from .matching import parse_mg
 from .models import Brand, BrandIngredient, Ingredient, Patient
 
 
+def _add_missing_columns() -> None:
+    """Tiny forward-only migration for columns added after the first deploy."""
+    wanted = {"entries": {"expiry": "VARCHAR(40)", "batch": "VARCHAR(60)"}}
+    insp = inspect(engine)
+    with engine.begin() as conn:
+        for table, cols in wanted.items():
+            have = {c["name"] for c in insp.get_columns(table)}
+            for col, ddl in cols.items():
+                if col not in have:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {ddl} NULL"))
+
+
 def init_db() -> None:
     Base.metadata.create_all(engine)
+    _add_missing_columns()
     with SessionLocal() as s:
         ing_by_name = {i.name: i for i in s.scalars(select(Ingredient))}
         for data in load_json("ingredients.json"):

@@ -11,10 +11,12 @@ Entry dict shape:
 """
 from __future__ import annotations
 
+import hashlib
 from collections import defaultdict
+from datetime import date
 
 from .kb import KB
-from .matching import clean, parse_mg
+from .matching import clean, parse_expiry, parse_mg
 
 
 def _resolve(entry: dict, kb: KB) -> list[dict]:
@@ -48,16 +50,30 @@ def _fmt(template: str, **kw) -> str:
     return template.format(**kw)
 
 
-def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en") -> dict:
+def _join(names: list[str], lang: str) -> str:
+    """'A, B and C' / 'A, B और C'."""
+    names = list(names)
+    if len(names) <= 1:
+        return "".join(names)
+    return ", ".join(names[:-1]) + (" और " if lang == "hi" else " and ") + names[-1]
+
+
+def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today: date | None = None) -> dict:
+    today = today or date.today()
     resolved = {e["id"]: _resolve(e, kb) for e in entries}
     names = {e["id"]: e["name"] for e in entries}
     alerts: list[dict] = []
 
     def make_alert(rule, entry_ids, evidence, **fmt):
+        simple = rule.get("simple") or rule["message"]
+        # Evidence lines are language-neutral, so the key is stable across languages and reloads.
+        disc = hashlib.sha1("\n".join(evidence).encode()).hexdigest()[:8]
         alerts.append({
             "rule_id": rule["rule_id"],
+            "key": f"{rule['rule_id']}|{','.join(map(str, sorted(set(entry_ids))))}|{disc}",
             "title": rule["title"].get(lang) or rule["title"]["en"],
             "message": _fmt(rule["message"].get(lang) or rule["message"]["en"], **fmt),
+            "simple": _fmt(simple.get(lang) or simple["en"], **fmt),
             "entry_ids": sorted(set(entry_ids)),
             "entries": [names[i] for i in sorted(set(entry_ids))],
             "evidence": evidence,
@@ -82,7 +98,7 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en") -> di
                 if key.startswith("?"):
                     evidence.append("Matched by exact printed name only (ingredient not in Medora's knowledge base).")
                 make_alert(rule, eids, evidence, ingredient=_label(kb, key), count=len(eids),
-                           entries=", ".join(names[e] for e in sorted(eids)))
+                           entries=_join([names[e] for e in sorted(eids)], lang))
                 alerts[-1]["ingredient_key"] = key
 
         elif t == "class_multiple":
@@ -91,7 +107,7 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en") -> di
             if len(distinct) >= p.get("min_distinct", 2):
                 evidence = [f"{names[eid]}: {kb.display(ing['canonical'])} {ing['strength']}".strip() for eid, ing in hits]
                 make_alert(rule, [eid for eid, _ in hits], evidence,
-                           items=", ".join(f"{kb.display(c)}" for c in distinct))
+                           items=_join([kb.display(c) for c in distinct], lang))
 
         elif t == "class_pair":
             b_classes = set(p["class_b"]) if isinstance(p["class_b"], list) else {p["class_b"]}
@@ -119,6 +135,15 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en") -> di
                         make_alert(rule, [eid], [f"{names[eid]}: {kb.display(ing['canonical'])} {ing['strength']}".strip(),
                                                  f"Patient age: {age}"],
                                    items=f"{kb.display(ing['canonical'])} ({names[eid]})")
+
+        elif t == "expired":
+            for e in entries:
+                exp = parse_expiry(e.get("expiry"))
+                # A pack is usable through the end of its printed expiry month.
+                if exp and (exp[0], exp[1]) < (today.year, today.month):
+                    label = f"{exp[1]:02d}/{exp[0]}"
+                    make_alert(rule, [e["id"]], [f"{e['name']}: printed expiry {e.get('expiry')}", f"Checked on {today.isoformat()}"],
+                               entry=e["name"], expiry=label)
 
         elif t == "composition_mismatch":
             for e in entries:

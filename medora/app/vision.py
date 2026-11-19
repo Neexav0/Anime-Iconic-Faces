@@ -39,6 +39,8 @@ class LabelTranscription(BaseModel):
     dosage_form_as_printed: str = Field(description="e.g. tablet, capsule, syrup; empty if not printed")
     composition_visible: bool = Field(description="True only if a composition / 'each tablet contains' block is visible")
     composition: list[PrintedIngredient]
+    expiry_as_printed: str = Field(description="Expiry date exactly as printed (e.g. 'EXP. 03/2026'); empty if not visible")
+    batch_as_printed: str = Field(description="Batch / lot number exactly as printed; empty if not visible")
 
 
 PROMPT = """You are a transcription tool for medicine packaging photographed in India.

@@ -67,9 +67,24 @@ class Entry(Base):
     note: Mapped[str] = mapped_column(String(255), default="")
     ingredients: Mapped[list] = mapped_column(JSON, default=list)
     printed_ingredients: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    expiry: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    batch: Mapped[str | None] = mapped_column(String(60), nullable=True)
     user_confirmed: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     def as_engine_dict(self) -> dict:
-        return {"id": self.id, "name": self.name, "brand_id": self.brand_id,
+        return {"id": self.id, "name": self.name, "brand_id": self.brand_id, "expiry": self.expiry,
                 "ingredients": self.ingredients or [], "printed_ingredients": self.printed_ingredients}
+
+
+class Review(Base):
+    """A pharmacist review session opened by scanning the patient's QR code."""
+    __tablename__ = "reviews"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), index=True)
+    reviewer: Mapped[str] = mapped_column(String(120), default="")
+    items: Mapped[dict] = mapped_column(JSON, default=dict)  # alert key -> {"done": bool, "note": str}
+    general_note: Mapped[str] = mapped_column(String(500), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

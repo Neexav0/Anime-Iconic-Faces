@@ -9,6 +9,10 @@
     "message": {
       "en": "{ingredient} is in {count} of these medicines: {entries}. Taking the same ingredient from more than one product can add up. Review with a pharmacist.",
       "hi": "{ingredient} इन {count} दवाओं में है: {entries}। एक ही घटक कई दवाओं से लेने पर उसकी मात्रा बढ़ सकती है। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    },
+    "simple": {
+      "en": "{entries} contain the same medicine: {ingredient}. Ask your pharmacist before taking them together.",
+      "hi": "{entries} में एक ही दवा है: {ingredient}। इन्हें साथ लेने से पहले अपने फ़ार्मासिस्ट से पूछें।"
     }
   },
   {
@@ -21,6 +25,10 @@
     "message": {
       "en": "More than one anti-inflammatory pain reliever (NSAID) was found: {items}. NSAID labels warn that the chance of stomach bleeding is higher when taken with other NSAIDs. Review with a pharmacist.",
       "hi": "एक से ज़्यादा NSAID दर्द-निवारक मिले: {items}। NSAID लेबल चेतावनी देते हैं कि दूसरे NSAID के साथ लेने पर पेट में रक्तस्राव का खतरा बढ़ता है। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    },
+    "simple": {
+      "en": "You have more than one painkiller of the same kind: {items}. Ask your pharmacist before taking them together.",
+      "hi": "आपके पास एक ही तरह के एक से ज़्यादा दर्द-निवारक हैं: {items}। इन्हें साथ लेने से पहले अपने फ़ार्मासिस्ट से पूछें।"
     }
   },
   {
@@ -33,6 +41,10 @@
     "message": {
       "en": "{a} (a blood thinner) and {b} are both on this list. Their labels warn that this combination can increase the risk of bleeding. Review with a pharmacist.",
       "hi": "{a} (खून पतला करने की दवा) और {b} दोनों इस सूची में हैं। इनके लेबल चेतावनी देते हैं कि यह मेल रक्तस्राव का खतरा बढ़ा सकता है। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    },
+    "simple": {
+      "en": "{a} thins the blood. Together with {b}, the chance of bleeding can go up. Ask your pharmacist.",
+      "hi": "{a} खून पतला करती है। {b} के साथ लेने पर खून बहने का खतरा बढ़ सकता है। अपने फ़ार्मासिस्ट से पूछें।"
     }
   },
   {
@@ -45,6 +57,10 @@
     "message": {
       "en": "{items} is a first-generation antihistamine. The 2023 AGS Beers Criteria list it as potentially inappropriate for adults aged 65 and over. Review with a pharmacist.",
       "hi": "{items} पहली पीढ़ी का एंटीहिस्टामिन है। 2023 AGS Beers Criteria इसे 65 वर्ष से अधिक उम्र के लोगों के लिए संभावित रूप से अनुपयुक्त बताते हैं। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    },
+    "simple": {
+      "en": "{items} is on a list of medicines that may not suit people over 65. Ask your pharmacist about it.",
+      "hi": "{items} उन दवाओं की सूची में है जो 65 वर्ष से ऊपर के लोगों के लिए ठीक न हों। अपने फ़ार्मासिस्ट से इसके बारे में पूछें।"
     }
   },
   {
@@ -57,6 +73,26 @@
     "message": {
       "en": "For {entry}, the pack composition ({printed}) does not match Medora's catalogue ({catalogue}). Please re-check the pack and review with a pharmacist.",
       "hi": "{entry} के लिए पैक पर लिखी संरचना ({printed}) Medora कैटलॉग ({catalogue}) से मेल नहीं खाती। कृपया पैक दोबारा देखें और फ़ार्मासिस्ट से जाँच करवाएँ।"
+    },
+    "simple": {
+      "en": "What we have for {entry} does not match our records. Please check the pack with your pharmacist.",
+      "hi": "{entry} की जानकारी हमारे रिकॉर्ड से मेल नहीं खाती। कृपया पैक अपने फ़ार्मासिस्ट को दिखाएँ।"
+    }
+  },
+  {
+    "rule_id": "R-EXP-001",
+    "type": "expired",
+    "params": {},
+    "sources": ["PACK-EXP"],
+    "scope": "The expiry date printed on the pack (as confirmed by the user) is in the past.",
+    "title": {"en": "Past its expiry date", "hi": "समाप्ति तिथि निकल चुकी है"},
+    "message": {
+      "en": "The pack of {entry} shows an expiry date of {expiry}, which has passed. Review with a pharmacist.",
+      "hi": "{entry} के पैक पर समाप्ति तिथि {expiry} लिखी है, जो निकल चुकी है। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    },
+    "simple": {
+      "en": "{entry} is past its expiry date ({expiry}). Show this pack to your pharmacist.",
+      "hi": "{entry} की समाप्ति तिथि ({expiry}) निकल चुकी है। यह पैक अपने फ़ार्मासिस्ट को दिखाएँ।"
     }
   }
 ]

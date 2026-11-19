@@ -51,7 +51,10 @@ def build_pdf(patient, entries, result, kb) -> bytes:
     rows = [[Paragraph(f"<b>{h}</b>", small) for h in ("#", "Medicine", "Composition as confirmed", "Source / note", "Reviewed")]]
     for i, e in enumerate(entries, 1):
         comp = "<br/>".join(f"{_esc(x.get('raw'))} {_esc(x.get('strength'))}" for x in (e.ingredients or [])) or "<i>not entered</i>"
-        src = ("catalogue-matched" if e.brand_id else "not in catalogue") + f" &middot; {'photo' if e.origin == 'photo' else 'typed'}"
+        origin = {"photo": "photo", "qr": "strip QR"}.get(e.origin, "typed")
+        src = ("catalogue-matched" if e.brand_id else "not in catalogue") + f" &middot; {origin}"
+        if e.expiry or e.batch:
+            src += "<br/>" + " &middot; ".join(x for x in [f"exp {_esc(e.expiry)}" if e.expiry else "", f"batch {_esc(e.batch)}" if e.batch else ""] if x)
         if e.note:
             src += f"<br/>{_esc(e.note)}"
         rows.append([Paragraph(str(i), body), Paragraph(f"<b>{_esc(e.name)}</b><br/>{_esc(e.form)}", body),

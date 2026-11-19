@@ -1,5 +1,6 @@
 [
   {"id": "PACK-COMP", "title": "Composition printed on the medicine pack, confirmed by the user", "publisher": "Product label", "url": null},
+  {"id": "PACK-EXP", "title": "Expiry date printed on the medicine pack, confirmed by the user", "publisher": "Product label", "url": null},
   {"id": "CAT-MEDORA", "title": "Medora curated Indian brand catalogue v0.1 (team-checked against printed pack composition)", "publisher": "Medora team", "url": "/catalogue"},
   {"id": "DM-NSAID-OTC", "title": "OTC NSAID Drug Facts label, 'Stomach bleeding warning': risk is higher when taking other drugs containing an NSAID, or a blood-thinning (anticoagulant) drug", "publisher": "DailyMed, U.S. National Library of Medicine", "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=ibuprofen"},
   {"id": "DM-WARFARIN", "title": "Warfarin prescribing information: drugs that increase bleeding risk include NSAIDs and antiplatelet agents", "publisher": "DailyMed, U.S. National Library of Medicine", "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=warfarin"},

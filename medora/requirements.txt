@@ -9,5 +9,6 @@ rapidfuzz
 reportlab
 python-dotenv
 google-genai
+qrcode
 pytest
 httpx

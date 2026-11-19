@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="stack" style="text-align:center">
+  <h1>{{ t('share_title') }}</h1>
+  <p class="lead" style="margin:0 auto">{{ t('share_sub') }}</p>
+  <div class="qr-box">{{ qr|safe }}</div>
+  <p class="small muted" style="margin:0;word-break:break-all">{{ url }}</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a class="btn big" href="/passport.pdf">⬇ {{ t('download_pdf') }}</a>
+    <button class="btn big warm" type="button" id="share-btn">👨‍👩‍👧 {{ t('send_family') }}</button>
+  </div>
+  <div class="note" style="text-align:left">
+    <b>{{ patient.name or '—' }}</b> · {{ entries|length }} {{ t('medicine_count') }} · {{ result.alerts|length }} {{ t('alerts')|lower }}.
+    The link opens a review page where your pharmacist can mark each point as discussed and leave a note for you.
+  </div>
+  <a class="btn plain" href="/">← {{ t('nav_passport') }}</a>
+</div>
+<script type="application/json" id="share-text">{{ share_text|tojson }}</script>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('share-btn').addEventListener('click', async () => {
+  const text = JSON.parse(document.getElementById('share-text').textContent);
+  if (navigator.share) { try { await navigator.share({ title: 'Medora', text }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
+});
+</script>
+{% endblock %}

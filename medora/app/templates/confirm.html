@@ -1,6 +1,12 @@
 {% extends "base.html" %}
+{% block width %}{% endblock %}
 {% block content %}
 <div class="stack">
+  <div class="steps" aria-label="Step 2 of 3">
+    <span class="step done"><b>✓</b>{{ t('step_photo') }}</span><span class="step-line"></span>
+    <span class="step on"><b>2</b>{{ t('step_check') }}</span><span class="step-line"></span>
+    <span class="step"><b>3</b>{{ t('step_done') }}</span>
+  </div>
   <div>
     <h1>{{ t('confirm_title') }}</h1>
     <p class="lead">{{ t('confirm_sub') }}</p>
@@ -8,7 +14,20 @@
   {% if error %}<div class="banner" role="alert">{{ t('must_check') if error == 'must_check' else 'Please enter the medicine name.' }}</div>{% endif %}
   {% if draft.error %}<div class="banner" role="alert">{{ draft.error }}</div>{% endif %}
 
-  <div class="{{ 'confirm-grid' if draft.origin == 'photo' else '' }}">
+  <div class="{{ 'confirm-grid' if draft.origin in ['photo', 'qr'] and x else '' }}">
+    {% if draft.origin == 'qr' and x %}
+    <aside class="photo stack">
+      <div class="card stack small">
+        <b>▦ Read from the strip's QR code</b>
+        <div>{{ t('brand') }}: <b>{{ x.brand_as_printed or '—' }}</b></div>
+        {% if x.manufacturer_as_printed %}<div class="muted">{{ x.manufacturer_as_printed }}</div>{% endif %}
+        {% if x.batch_as_printed %}<div>{{ t('batch_field') }}: <b>{{ x.batch_as_printed }}</b></div>{% endif %}
+        {% if x.expiry_as_printed %}<div>{{ t('expiry_field') }}: <b>{{ x.expiry_as_printed }}</b></div>{% endif %}
+        <details><summary class="muted">Raw QR text</summary><pre style="white-space:pre-wrap;font-size:.8rem">{{ x._raw_qr }}</pre></details>
+        <div class="muted">QR data comes from the manufacturer's printed code. Still check it against the pack.</div>
+      </div>
+    </aside>
+    {% endif %}
     {% if draft.origin == 'photo' %}
     <aside class="photo stack">
       {% if has_image %}<img src="/draft-image/{{ draft.id }}" alt="Photo of the medicine pack you uploaded">{% endif %}
@@ -44,7 +63,7 @@
 
       <div class="field">
         <span>{{ t('composition') }}
-          {% if rows_source == 'pack' %}<span class="badge">{{ t('read_from_pack') }}</span>{% elif rows_source == 'catalogue' %}<span class="badge warn">from catalogue · {{ t('check_this') }}</span>{% endif %}
+          {% if rows_source == 'pack' %}<span class="badge">{{ t('read_from_pack') }}</span>{% elif rows_source == 'qr' %}<span class="badge">QR</span>{% elif rows_source == 'catalogue' %}<span class="badge warn">from catalogue · {{ t('check_this') }}</span>{% endif %}
         </span>
         <div id="rows" class="stack">
           {% for r in rows %}
@@ -63,6 +82,15 @@
       </div>
 
       <div id="xcheck" class="xcheck" hidden></div>
+
+      <div class="grid2">
+        <label class="field"><span>{{ t('expiry_field') }}</span>
+          <input type="text" name="expiry" id="expiry" maxlength="40" value="{{ x.expiry_as_printed if x and x.expiry_as_printed else '' }}" placeholder="EXP 03/2027">
+        </label>
+        <label class="field"><span>{{ t('batch_field') }}</span>
+          <input type="text" name="batch" maxlength="60" value="{{ x.batch_as_printed if x and x.batch_as_printed else '' }}" placeholder="B.No. DOBS4521">
+        </label>
+      </div>
 
       <label class="field"><span>{{ t('prescriber') }}</span>
         <input type="text" name="note" maxlength="200" placeholder="Dr. Mehta, cardiology · chemist near home">

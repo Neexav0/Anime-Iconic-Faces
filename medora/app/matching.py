@@ -44,6 +44,31 @@ def parse_mg(strength: str | None) -> float | None:
     return {"mg": val, "g": val * 1000, "mcg": val / 1000, "µg": val / 1000}[unit]
 
 
+MONTHS = {m: i for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], 1)}
+
+
+def parse_expiry(text: str | None) -> tuple[int, int] | None:
+    """'EXP 03/2026', 'Exp. MAR 2026', '03/26', '2026-03', 'MAR.26' -> (2026, 3). Unparseable -> None."""
+    if not text:
+        return None
+    s = text.lower()
+    m = re.search(r"\b(20\d{2})[-/.](\d{1,2})\b", s)
+    if m:
+        y, mo = int(m.group(1)), int(m.group(2))
+    else:
+        m = re.search(r"\b(\d{1,2})\s*[-/.]\s*(20\d{2}|\d{2})\b", s)
+        if m:
+            mo, y = int(m.group(1)), int(m.group(2))
+        else:
+            m = re.search(r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*[-/.,']?\s*(20\d{2}|\d{2})\b", s)
+            if not m:
+                return None
+            mo, y = MONTHS[m.group(1)], int(m.group(2))
+    if y < 100:
+        y += 2000
+    return (y, mo) if 1 <= mo <= 12 and 2000 <= y <= 2100 else None
+
+
 def brand_key(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", (name or "").lower())
 
