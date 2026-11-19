@@ -1,0 +1,62 @@
+[
+  {
+    "rule_id": "R-DUP-001",
+    "type": "duplicate_ingredient",
+    "params": {},
+    "sources": ["PACK-COMP", "CAT-MEDORA"],
+    "scope": "Same active ingredient found in two or more confirmed medicines.",
+    "title": {"en": "Same ingredient in more than one medicine", "hi": "एक ही दवा-घटक एक से ज़्यादा दवाओं में"},
+    "message": {
+      "en": "{ingredient} is in {count} of these medicines: {entries}. Taking the same ingredient from more than one product can add up. Review with a pharmacist.",
+      "hi": "{ingredient} इन {count} दवाओं में है: {entries}। एक ही घटक कई दवाओं से लेने पर उसकी मात्रा बढ़ सकती है। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    }
+  },
+  {
+    "rule_id": "R-CLS-NSAID",
+    "type": "class_multiple",
+    "params": {"class": "nsaid", "min_distinct": 2},
+    "sources": ["DM-NSAID-OTC"],
+    "scope": "Two or more different NSAID pain relievers (aspirin counted only at 300 mg or more; low-dose aspirin excluded).",
+    "title": {"en": "More than one NSAID pain reliever", "hi": "एक से ज़्यादा NSAID दर्द-निवारक"},
+    "message": {
+      "en": "More than one anti-inflammatory pain reliever (NSAID) was found: {items}. NSAID labels warn that the chance of stomach bleeding is higher when taken with other NSAIDs. Review with a pharmacist.",
+      "hi": "एक से ज़्यादा NSAID दर्द-निवारक मिले: {items}। NSAID लेबल चेतावनी देते हैं कि दूसरे NSAID के साथ लेने पर पेट में रक्तस्राव का खतरा बढ़ता है। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    }
+  },
+  {
+    "rule_id": "R-BLEED-01",
+    "type": "class_pair",
+    "params": {"class_a": "anticoagulant", "class_b": ["nsaid", "antiplatelet"]},
+    "sources": ["DM-WARFARIN", "DM-APIXABAN", "DM-NSAID-OTC"],
+    "scope": "A blood thinner (warfarin, apixaban) together with an NSAID or antiplatelet medicine.",
+    "title": {"en": "Blood thinner with NSAID / antiplatelet", "hi": "खून पतला करने की दवा के साथ NSAID / एंटीप्लेटलेट"},
+    "message": {
+      "en": "{a} (a blood thinner) and {b} are both on this list. Their labels warn that this combination can increase the risk of bleeding. Review with a pharmacist.",
+      "hi": "{a} (खून पतला करने की दवा) और {b} दोनों इस सूची में हैं। इनके लेबल चेतावनी देते हैं कि यह मेल रक्तस्राव का खतरा बढ़ा सकता है। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    }
+  },
+  {
+    "rule_id": "R-BEERS-AH",
+    "type": "elderly_listed",
+    "params": {"min_age": 65, "ingredients": ["chlorpheniramine", "diphenhydramine"]},
+    "sources": ["AGS-BEERS-2023"],
+    "scope": "Patient aged 65+ with a first-generation antihistamine explicitly named in the 2023 AGS Beers Criteria (only ingredients named there are checked).",
+    "title": {"en": "Listed in Beers Criteria for older adults", "hi": "बुज़ुर्गों के लिए Beers Criteria में सूचीबद्ध"},
+    "message": {
+      "en": "{items} is a first-generation antihistamine. The 2023 AGS Beers Criteria list it as potentially inappropriate for adults aged 65 and over. Review with a pharmacist.",
+      "hi": "{items} पहली पीढ़ी का एंटीहिस्टामिन है। 2023 AGS Beers Criteria इसे 65 वर्ष से अधिक उम्र के लोगों के लिए संभावित रूप से अनुपयुक्त बताते हैं। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    }
+  },
+  {
+    "rule_id": "R-XCHK-001",
+    "type": "composition_mismatch",
+    "params": {},
+    "sources": ["PACK-COMP", "CAT-MEDORA"],
+    "scope": "The composition confirmed from the pack differs from Medora's catalogue entry for that brand.",
+    "title": {"en": "Pack and catalogue disagree", "hi": "पैक और कैटलॉग में अंतर"},
+    "message": {
+      "en": "For {entry}, the pack composition ({printed}) does not match Medora's catalogue ({catalogue}). Please re-check the pack and review with a pharmacist.",
+      "hi": "{entry} के लिए पैक पर लिखी संरचना ({printed}) Medora कैटलॉग ({catalogue}) से मेल नहीं खाती। कृपया पैक दोबारा देखें और फ़ार्मासिस्ट से जाँच करवाएँ।"
+    }
+  }
+]

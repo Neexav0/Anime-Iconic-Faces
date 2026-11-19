@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="stack">
+  <h1>{{ t('nav_add') }}</h1>
+  {% if error %}<div class="banner">{{ {'empty': 'No photo was received. Please try again.', 'too_large': 'That photo is larger than 10 MB. Please take a smaller one.', 'not_image': 'That file is not an image. Please upload a photo.'}.get(error, error) }}</div>{% endif %}
+  <div class="grid2">
+    <form class="card choice" id="photo-form" method="post" action="/extract" enctype="multipart/form-data">
+      <div class="icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h3l2-3h8l2 3h3v13H3z"/><circle cx="12" cy="13" r="4"/></svg></div>
+      <h2 style="margin:0">{{ t('add_photo') }}</h2>
+      <p class="muted" style="margin:0">{{ t('add_photo_sub') }}</p>
+      <label class="drop" id="drop">
+        <input type="file" name="photo" id="photo" accept="image/*" capture="environment" required style="position:absolute;opacity:0;width:1px;height:1px">
+        <img id="preview" alt="" hidden>
+        <span id="drop-text"><b>Tap to take or choose a photo</b><br><span class="small muted">JPG / PNG · up to 10 MB</span></span>
+      </label>
+      <button class="btn big" id="read-btn" type="submit" disabled>{{ t('read_label') }}</button>
+      <div class="spinner" role="status"><span class="spin"></span>{{ t('reading') }}</div>
+      <p class="small muted" style="margin:0">🔒 {{ t('privacy') }}</p>
+    </form>
+    <div class="card choice">
+      <div class="icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h6"/></svg></div>
+      <h2 style="margin:0">{{ t('add_manual') }}</h2>
+      <p class="muted" style="margin:0">{{ t('add_manual_sub') }}</p>
+      <a class="btn big ghost" href="/manual">{{ t('add_manual') }}</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const input = document.getElementById('photo'), img = document.getElementById('preview'),
+      btn = document.getElementById('read-btn'), form = document.getElementById('photo-form');
+input.addEventListener('change', () => {
+  const f = input.files[0];
+  if (!f) return;
+  img.src = URL.createObjectURL(f); img.hidden = false;
+  document.getElementById('drop-text').hidden = true;
+  btn.disabled = false;
+});
+form.addEventListener('submit', () => { form.classList.add('busy'); btn.disabled = true; });
+</script>
+{% endblock %}

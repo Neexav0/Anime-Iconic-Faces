@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="stack">
+  <div>
+    <h1>{{ t('nav_rules') }}</h1>
+    <p class="lead">Every alert comes from one of these {{ kb.rules|length }} rules. Each rule is data with a fixed message and a cited source. No AI model writes or decides any alert. Anything outside these rules is shown as <b>Not assessed</b>, never as safe.</p>
+  </div>
+
+  <div class="card">
+    <h2>The pipeline</h2>
+    <ol style="margin:0;padding-left:20px">
+      <li><b>Read</b>: Gemini vision transcribes the pack text into a fixed schema (brand, composition as printed, legibility). It has no field for opinions and is told never to fill in ingredients from memory.</li>
+      <li><b>Confirm</b>: you check every field against the pack. Nothing reaches the database before this step.</li>
+      <li><b>Match</b>: brand to catalogue ({{ kb.brands|length }} Indian brands, stored in the database). Ingredient names are recognised only by exact name, listed synonym or salt-stripping. Fuzzy matches are suggestions you must accept.</li>
+      <li><b>Check</b>: the deterministic rule engine below runs on confirmed entries only.</li>
+      <li><b>Review</b>: a pharmacist summary with every flag, its evidence and its source.</li>
+    </ol>
+  </div>
+
+  {% for r in kb.rules %}
+  <div class="card stack">
+    <h2 style="margin:0;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline">{{ r.title[lang] or r.title.en }} <span class="badge">{{ r.rule_id }}</span></h2>
+    <div><b>Fires when:</b> {{ r.scope }}</div>
+    <div class="note">“{{ r.message[lang] or r.message.en }}”</div>
+    <div class="small"><b>{{ t('sources') }}:</b>
+      <ul style="margin:4px 0 0;padding-left:20px">
+      {% for sid in r.sources %}{% set s = kb.sources[sid] %}
+        <li><b>{{ s.id }}</b>: {{ s.title }} · {% if s.url %}<a href="{{ s.url }}" {% if s.url.startswith('http') %}target="_blank" rel="noopener"{% endif %}>{{ s.publisher }}</a>{% else %}{{ s.publisher }}{% endif %}</li>
+      {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="card stack">
+    <h2 style="margin:0">Deliberate limits</h2>
+    <ul style="margin:0;padding-left:20px">
+      <li>No dosing, no "safe" verdicts, and never advice to start, stop or switch a medicine. Every message ends in "review with a pharmacist".</li>
+      <li>Low-dose aspirin (under 300 mg) is not counted as an NSAID pain reliever, but it still counts as an antiplatelet in the bleeding rule.</li>
+      <li>The Beers rule checks only antihistamines named explicitly in the 2023 AGS Beers Criteria. Pheniramine is not named there, so it is not flagged.</li>
+      <li>If a strength is unreadable, conditional classes are applied conservatively (more review, not less).</li>
+      <li>Photos are held in memory until you confirm or discard, then dropped. Only confirmed text fields are stored.</li>
+      <li>Rule wording is a prototype pending pharmacist review. Sources are cited for traceability, not as clinical validation.</li>
+    </ul>
+    <a href="/catalogue">View the full brand catalogue →</a>
+  </div>
+</div>
+{% endblock %}

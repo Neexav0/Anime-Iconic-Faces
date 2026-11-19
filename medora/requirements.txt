@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+sqlalchemy>=2.0
+pymysql
+cryptography
+rapidfuzz
+reportlab
+python-dotenv
+google-genai
+pytest
+httpx

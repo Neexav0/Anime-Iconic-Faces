@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="stack">
+  <div>
+    <h1>{{ t('hero_title') }}</h1>
+    <p class="lead">{{ t('hero_sub') }}</p>
+  </div>
+
+  <form class="card patient-bar" method="post" action="/patient">
+    <label>{{ t('patient') }} · {{ t('name') }}<input type="text" name="name" value="{{ patient.name }}" style="width:220px" autocomplete="off"></label>
+    <label>{{ t('age') }} ({{ t('years') }})<input type="number" name="age" min="1" max="124" value="{{ patient.age or '' }}" style="width:110px"></label>
+    <button class="btn ghost" type="submit">{{ t('save') }}</button>
+    {% if patient.age and patient.age >= 65 %}<span class="badge warn">65+ · Beers Criteria check on</span>{% endif %}
+    <span style="margin-left:auto"></span>
+    <a class="btn" href="/add">+ {{ t('nav_add') }}</a>
+  </form>
+
+  <div class="grid3">
+    <div class="stat"><b>{{ entries|length }}</b><span>{{ t('medicines') }}</span></div>
+    <div class="stat {{ 'warn' if result.alerts }}"><b>{{ result.alerts|length }}</b><span>{{ t('alerts') }}</span></div>
+    <div class="stat grey"><b>{{ result.not_assessed|length }}</b><span>{{ t('not_assessed') }}</span></div>
+  </div>
+
+  {% if entries %}
+  <section class="section stack" aria-labelledby="h-alerts">
+    <h2 id="h-alerts">{{ t('alerts') }}</h2>
+    {% for a in result.alerts %}
+    <article class="alert">
+      <h3>{{ a.title }} <span class="rid">{{ a.rule_id }}</span></h3>
+      <p>{{ a.message }}</p>
+      <details>
+        <summary>{{ t('why') }} · {{ t('sources') }}</summary>
+        <ul>
+          {% for ev in a.evidence %}<li>{{ ev }}</li>{% endfor %}
+        </ul>
+        <ul>
+          {% for s in a.sources %}<li><b>{{ s.id }}</b>: {{ s.title }}{% if s.url %} · <a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.publisher }}</a>{% endif %}</li>{% endfor %}
+        </ul>
+      </details>
+    </article>
+    {% else %}
+    <div class="ok-box">{{ t('all_clear_rules') }} <span class="muted">{{ t('no_alert_note') }}</span></div>
+    {% endfor %}
+  </section>
+
+  {% if result.not_assessed %}
+  <section class="section stack">
+    <h2>{{ t('na_title') }}</h2>
+    {% for n in result.not_assessed %}
+    <div class="note"><b>{{ n.entry }}</b>: {{ t('na_' + n.reason) }}{% if n.reason == 'some_unknown' %} {{ n['items']|join(', ') }}{% endif %}</div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="section stack">
+    <h2>{{ t('medicines') }}</h2>
+    {% for e in entries %}
+    <div class="med {{ 'flag' if e.id in flagged }} {{ 'new' if added == e.id }}">
+      <div class="pill">{{ loop.index }}</div>
+      <div class="body">
+        <h4>{{ e.name }} {% if e.form %}<span class="muted small">· {{ e.form }}</span>{% endif %}</h4>
+        <div class="small muted">
+          {{ t('origin_' + e.origin) }}
+          {% if e.brand_id %} · <span class="badge ok">catalogue</span>{% else %} · <span class="badge">not in catalogue</span>{% endif %}
+          {% if e.note %} · {{ e.note }}{% endif %}
+        </div>
+        <div class="tags">
+          {% for tg in tags[e.id] %}<span class="tag {{ tg.kind }}">{{ tg.label }}</span>{% else %}<span class="tag unk">no composition</span>{% endfor %}
+        </div>
+      </div>
+      <form method="post" action="/entries/{{ e.id }}/delete"><button class="btn plain" type="submit" aria-label="{{ t('delete') }} {{ e.name }}">{{ t('delete') }}</button></form>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="section">
+    <h2>{{ t('ingredient_view') }}</h2>
+    <div class="card table-scroll" style="padding:6px 8px">
+      <table class="plain">
+        <thead><tr><th>{{ t('ingredient') }}</th><th>{{ t('in_medicines') }}</th><th></th></tr></thead>
+        <tbody>
+        {% for iv in result.ingredient_view %}
+          <tr>
+            <td><b>{{ iv.ingredient }}</b></td>
+            <td>{{ iv.entries|join(' · ') }}</td>
+            <td>{% if iv.count > 1 %}<span class="badge warn">×{{ iv.count }}</span>{% endif %}
+                {% if not iv.recognised %}<span class="badge">{{ t('unrecognised') }}</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section card stack">
+    <a class="btn big" href="/passport.pdf">⬇ {{ t('download_pdf') }}</a>
+    <p class="small muted" style="margin:0">{{ t('no_alert_note') }}</p>
+  </section>
+  {% else %}
+  <div class="card" style="text-align:center;padding:40px 20px">
+    <p class="lead" style="margin:0 auto 16px">{{ t('no_meds') }}</p>
+    <a class="btn big" href="/add">+ {{ t('nav_add') }}</a>
+  </div>
+  {% endif %}
+
+  <details class="section card">
+    <summary style="cursor:pointer;font-weight:700">{{ t('demo') }}</summary>
+    <div class="stack" style="margin-top:12px">
+      {% for key, d in demos.items() %}
+      <form method="post" action="/demo/{{ key }}" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn ghost" type="submit">Load</button>
+        <span><b>{{ d.title }}</b> <span class="muted small">· {{ d.name }}, {{ d.age }} · {{ d.entries|map(attribute=0)|join(' + ') }}</span></span>
+      </form>
+      {% endfor %}
+      <form method="post" action="/demo/reset"><button class="btn danger" type="submit">{{ t('reset') }}</button></form>
+    </div>
+  </details>
+</div>
+{% endblock %}

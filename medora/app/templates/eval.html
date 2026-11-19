@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="stack">
+  <div>
+    <h1>{{ t('nav_eval') }}</h1>
+    <p class="lead">This page re-runs live on every load. A labelled synthetic test set (salts, synonyms, typos, low-dose exclusions, unknown medicines and injection-style text) goes through the same rule engine the app uses. It measures whether the implementation is correct. It is not a clinical validation.</p>
+  </div>
+  <div class="grid3">
+    <div class="stat {{ '' if ev.passed == ev.total else 'warn' }}"><b>{{ ev.passed }}/{{ ev.total }}</b><span>labelled cases passing</span></div>
+    {% set d = ev.per_rule.get('R-DUP-001') %}
+    <div class="stat"><b>{% if d and d.precision is not none %}{{ '%.0f'|format(d.precision*100) }}% / {{ '%.0f'|format(d.recall*100) }}%{% else %}—{% endif %}</b><span>duplicate detection precision / recall</span></div>
+    <div class="stat grey"><b>{{ ev.not_assessed.correct }}/{{ ev.not_assessed.expected }}</b><span>unknowns correctly marked "Not assessed"</span></div>
+  </div>
+
+  <div class="card table-scroll" style="padding:6px 8px">
+    <table class="plain">
+      <thead><tr><th>Rule</th><th>TP</th><th>FP</th><th>FN</th><th>Precision</th><th>Recall</th></tr></thead>
+      <tbody>
+      {% for rid, m in ev.per_rule.items() %}
+      <tr><td><b>{{ rid }}</b></td><td>{{ m.tp }}</td><td>{{ m.fp }}</td><td>{{ m.fn }}</td>
+        <td>{{ '%.0f%%'|format(m.precision*100) if m.precision is not none else '—' }}</td>
+        <td>{{ '%.0f%%'|format(m.recall*100) if m.recall is not none else '—' }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card table-scroll" style="padding:6px 8px">
+    <table class="plain">
+      <thead><tr><th>Case</th><th>Scenario</th><th>Expected</th><th>Fired</th><th></th></tr></thead>
+      <tbody>
+      {% for c in ev.cases %}
+      <tr><td>{{ c.id }}</td><td>{{ c.desc }}</td>
+        <td class="small">{{ c.expected|join(', ') or 'no alert' }}{% if c.expected_na %}<br>NA: {{ c.expected_na|join(', ') }}{% endif %}</td>
+        <td class="small">{{ c.fired|join(', ') or 'no alert' }}{% if c.not_assessed %}<br>NA: {{ c.not_assessed|join(', ') }}{% endif %}</td>
+        <td>{% if c.pass %}<span class="badge ok">pass</span>{% else %}<span class="badge warn">fail</span>{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

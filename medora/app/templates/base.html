@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="{{ lang }}" class="{{ 'large' if large }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Medora · {{ t('app_tag') }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="/static/style.css?v=3">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="/"><span class="logo-mark">M</span><span><b>MEDORA</b><small>{{ t('app_tag') }}</small></span></a>
+    <nav class="main">
+      {% set p = request.url.path %}
+      <a href="/" class="{{ 'on' if p == '/' }}">{{ t('nav_passport') }}</a>
+      <a href="/add" class="{{ 'on' if p.startswith('/add') or p.startswith('/confirm') }}">{{ t('nav_add') }}</a>
+      <a href="/rules" class="{{ 'on' if p in ['/rules', '/catalogue'] }}">{{ t('nav_rules') }}</a>
+      <a href="/eval" class="{{ 'on' if p == '/eval' }}">{{ t('nav_eval') }}</a>
+    </nav>
+    <div class="prefs">
+      <a class="chip-btn {{ 'on' if lang == 'en' }}" href="/settings?lang=en&back={{ p }}">EN</a>
+      <a class="chip-btn {{ 'on' if lang == 'hi' }}" href="/settings?lang=hi&back={{ p }}">हिं</a>
+      <a class="chip-btn {{ 'on' if large }}" href="/settings?large={{ '0' if large else '1' }}&back={{ p }}">A+ {{ t('large_text') }}</a>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+{% block content %}{% endblock %}
+</main>
+<footer class="foot">
+  <div class="wrap">{{ t('disclaimer') }} · Data store: {{ db_kind }} · Prototype for Aarambhathon. Demo data is synthetic.</div>
+</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

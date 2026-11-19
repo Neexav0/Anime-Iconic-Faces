@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="stack">
+  <div>
+    <h1>{{ t('confirm_title') }}</h1>
+    <p class="lead">{{ t('confirm_sub') }}</p>
+  </div>
+  {% if error %}<div class="banner" role="alert">{{ t('must_check') if error == 'must_check' else 'Please enter the medicine name.' }}</div>{% endif %}
+  {% if draft.error %}<div class="banner" role="alert">{{ draft.error }}</div>{% endif %}
+
+  <div class="{{ 'confirm-grid' if draft.origin == 'photo' else '' }}">
+    {% if draft.origin == 'photo' %}
+    <aside class="photo stack">
+      {% if has_image %}<img src="/draft-image/{{ draft.id }}" alt="Photo of the medicine pack you uploaded">{% endif %}
+      {% if x %}
+      <div class="card stack small">
+        <b>{{ t('read_from_pack') }}</b>
+        <div>{{ t('brand') }}: <b>{{ x.brand_as_printed or '—' }}</b> <span class="badge {{ 'ok' if x.brand_legibility == 'clear' else 'warn' }}">{{ x.brand_legibility }}</span></div>
+        {% if x.manufacturer_as_printed %}<div class="muted">{{ x.manufacturer_as_printed }}</div>{% endif %}
+        {% if not x.is_medicine_pack %}<div class="banner">This does not look like a medicine pack. Please check the photo.</div>{% endif %}
+        {% if not x.composition_visible %}<div class="banner">The composition was not visible in this photo. Enter it from the pack, or use the catalogue composition and check it against the pack.</div>{% endif %}
+        <div class="muted">Read by {{ 'Gemini vision (transcription only)' if x._source == 'gemini' else 'cached transcription of this exact photo' }}. Highlighted fields were hard to read.</div>
+      </div>
+      {% endif %}
+    </aside>
+    {% endif %}
+
+    <form class="card stack" method="post" action="/entries" id="confirm-form" autocomplete="off">
+      <input type="hidden" name="draft_id" value="{{ draft.id }}">
+      <input type="hidden" name="brand_id" id="brand_id" value="{{ exact.id if exact else '' }}">
+
+      <label class="field {{ 'leg-' ~ x.brand_legibility if x and x.brand_legibility != 'clear' }}">
+        <span>{{ t('brand') }}</span>
+        <input type="text" name="name" id="name" value="{{ brand_text }}" required placeholder="e.g. Dolo 650">
+      </label>
+      <div>
+        <div class="small muted" style="margin-bottom:6px">{{ t('catalogue_match') }}</div>
+        <div class="sugg" id="sugg"></div>
+      </div>
+
+      <label class="field"><span>{{ t('form') }}</span>
+        <input type="text" name="form" id="form" value="{{ (x.dosage_form_as_printed if x else '') or (exact.form if exact else '') }}" placeholder="tablet, capsule, syrup…">
+      </label>
+
+      <div class="field">
+        <span>{{ t('composition') }}
+          {% if rows_source == 'pack' %}<span class="badge">{{ t('read_from_pack') }}</span>{% elif rows_source == 'catalogue' %}<span class="badge warn">from catalogue · {{ t('check_this') }}</span>{% endif %}
+        </span>
+        <div id="rows" class="stack">
+          {% for r in rows %}
+          <div class="ing-row leg-{{ r.legibility }}">
+            <input type="text" name="ing_raw" value="{{ r.raw }}" aria-label="{{ t('ingredient') }}" placeholder="{{ t('ingredient') }}">
+            <input type="text" name="ing_strength" value="{{ r.strength }}" aria-label="{{ t('strength') }}" placeholder="650 mg">
+            <button type="button" class="btn plain rm">{{ t('remove') }}</button>
+            <div class="rec"></div>
+          </div>
+          {% endfor %}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn ghost" id="add-row">+ {{ t('add_row') }}</button>
+          <button type="button" class="btn ghost" id="use-cat" hidden>{{ t('use_catalogue') }}</button>
+        </div>
+      </div>
+
+      <div id="xcheck" class="xcheck" hidden></div>
+
+      <label class="field"><span>{{ t('prescriber') }}</span>
+        <input type="text" name="note" maxlength="200" placeholder="Dr. Mehta, cardiology · chemist near home">
+      </label>
+
+      <label class="confirm-box">
+        <input type="checkbox" name="confirmed" id="confirmed">
+        <span>{{ t('confirm_check') }}</span>
+      </label>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn big" type="submit" id="submit" disabled>{{ t('confirm_btn') }}</button>
+      </div>
+    </form>
+  </div>
+  <form method="post" action="/drafts/{{ draft.id }}/discard"><button class="btn plain" type="submit">{{ t('discard') }}</button></form>
+</div>
+
+<template id="row-tpl">
+  <div class="ing-row">
+    <input type="text" name="ing_raw" aria-label="{{ t('ingredient') }}" placeholder="{{ t('ingredient') }}">
+    <input type="text" name="ing_strength" aria-label="{{ t('strength') }}" placeholder="650 mg">
+    <button type="button" class="btn plain rm">{{ t('remove') }}</button>
+    <div class="rec"></div>
+  </div>
+</template>
+{% endblock %}
+{% block scripts %}
+<script>
+const T = {{ {'recognised_as': t('recognised_as'), 'not_recognised': t('not_recognised'), 'did_you_mean': t('did_you_mean'), 'no_catalogue': t('no_catalogue')}|tojson }};
+const $ = s => document.querySelector(s);
+const rows = $('#rows'), nameIn = $('#name'), brandId = $('#brand_id'), sugg = $('#sugg'), xc = $('#xcheck'), useCat = $('#use-cat');
+let candidates = [], selected = null, recCache = {};
+const debounce = (fn, ms) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), ms); }; };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function addRow(raw = '', strength = '') {
+  const node = $('#row-tpl').content.firstElementChild.cloneNode(true);
+  node.querySelector('[name=ing_raw]').value = raw;
+  node.querySelector('[name=ing_strength]').value = strength;
+  rows.appendChild(node); wireRow(node); return node;
+}
+function wireRow(row) {
+  const inp = row.querySelector('[name=ing_raw]');
+  inp.addEventListener('input', debounce(() => recognise(row), 250));
+  row.querySelectorAll('input').forEach(i => i.addEventListener('input', () => row.classList.remove('leg-partial', 'leg-unreadable')));
+  row.querySelector('.rm').addEventListener('click', () => { row.remove(); crossCheck(); });
+  recognise(row);
+}
+async function recognise(row) {
+  const v = row.querySelector('[name=ing_raw]').value.trim(), out = row.querySelector('.rec');
+  if (!v) { out.textContent = ''; out.className = 'rec'; row.dataset.key = ''; crossCheck(); return; }
+  const r = recCache[v] || (recCache[v] = await fetch('/api/recognise?name=' + encodeURIComponent(v)).then(r => r.json()));
+  if (r.canonical) {
+    out.className = 'rec ok'; out.textContent = '✓ ' + T.recognised_as + ' ' + r.display + (r.method !== 'exact' ? ' (' + r.method + ')' : '');
+    row.dataset.key = r.display.toLowerCase();
+  } else {
+    out.className = 'rec bad'; row.dataset.key = '?' + v.toLowerCase();
+    out.innerHTML = '⚠ ' + esc(T.not_recognised) + (r.suggestion ? ` <button type="button" class="btn plain" style="padding:0 4px;color:var(--teal)">${esc(T.did_you_mean)} ${esc(r.suggestion)}?</button>` : '');
+    const b = out.querySelector('button');
+    if (b) b.onclick = () => { row.querySelector('[name=ing_raw]').value = r.suggestion; recognise(row); };
+  }
+  crossCheck();
+}
+function renderSugg() {
+  sugg.innerHTML = '';
+  if (!candidates.length) { sugg.innerHTML = `<div class="small muted">${esc(T.no_catalogue)}</div>`; }
+  candidates.forEach(b => {
+    const btn = document.createElement('button'); btn.type = 'button';
+    btn.className = selected && selected.id === b.id ? 'on' : '';
+    btn.innerHTML = `<b>${esc(b.name)}</b> <small>${esc(b.manufacturer)} · ${esc(b.form)} · ${b.ingredients.map(i => esc(i.display + ' ' + i.strength)).join(' + ')}</small>`;
+    btn.onclick = () => selectBrand(selected && selected.id === b.id ? null : b);
+    sugg.appendChild(btn);
+  });
+}
+function selectBrand(b) {
+  selected = b; brandId.value = b ? b.id : '';
+  if (b) { nameIn.value = b.name; if (!$('#form').value) $('#form').value = b.form; }
+  const hasRows = [...rows.querySelectorAll('[name=ing_raw]')].some(i => i.value.trim());
+  if (b && !hasRows) { rows.innerHTML = ''; b.ingredients.forEach(i => addRow(i.display, i.strength)); }
+  useCat.hidden = !b; renderSugg(); crossCheck();
+}
+function crossCheck() {
+  if (!selected) { xc.hidden = true; return; }
+  const cat = selected.ingredients.map(i => i.display.toLowerCase()).sort();
+  const got = [...rows.querySelectorAll('.ing-row')].map(r => r.dataset.key).filter(Boolean).sort();
+  if (!got.length) { xc.hidden = true; return; }
+  const same = cat.length === got.length && cat.every((c, i) => c === got[i]);
+  xc.hidden = false; xc.className = 'xcheck ' + (same ? 'match' : 'mismatch');
+  xc.innerHTML = same
+    ? `✓ Composition matches Medora's catalogue entry for <b>${esc(selected.name)}</b>.`
+    : `⚠ Composition differs from the catalogue entry for <b>${esc(selected.name)}</b> (${selected.ingredients.map(i => esc(i.display)).join(' + ')}). Check the pack. If you save it like this, it will be flagged for pharmacist review.`;
+}
+const searchBrands = debounce(async () => {
+  const q = nameIn.value.trim();
+  candidates = q ? await fetch('/api/brands?q=' + encodeURIComponent(q)).then(r => r.json()) : [];
+  if (selected && selected.name.toLowerCase() !== q.toLowerCase()) { selected = null; brandId.value = ''; useCat.hidden = true; }
+  if (!selected && brandId.value) selected = candidates.find(c => String(c.id) === brandId.value) || null;
+  renderSugg(); crossCheck();
+}, 200);
+nameIn.addEventListener('input', searchBrands);
+$('#add-row').onclick = () => addRow().querySelector('input').focus();
+useCat.onclick = () => { rows.innerHTML = ''; selected.ingredients.forEach(i => addRow(i.display, i.strength)); };
+$('#confirmed').addEventListener('change', e => $('#submit').disabled = !e.target.checked);
+rows.querySelectorAll('.ing-row').forEach(wireRow);
+if (!rows.children.length) addRow();
+searchBrands();
+</script>
+{% endblock %}

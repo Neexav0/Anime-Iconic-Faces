@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="stack">
+  <div>
+    <h1>Brand catalogue</h1>
+    <p class="lead">{{ kb.brands|length }} Indian brands, curated from the composition printed on the pack. Brands outside this list still work: the composition you confirm from the pack is checked for duplicates, and is marked as not catalogue-verified.</p>
+  </div>
+  <div class="card table-scroll" style="padding:6px 8px">
+    <table class="plain">
+      <thead><tr><th>Brand</th><th>Manufacturer</th><th>Form</th><th>Composition</th></tr></thead>
+      <tbody>
+      {% for b in kb.brands %}
+        <tr><td><b>{{ b.name }}</b></td><td>{{ b.manufacturer }}</td><td>{{ b.form }}</td>
+          <td>{% for i in b.ingredients %}{{ kb.display(i.canonical) }} {{ i.strength }}{{ ' + ' if not loop.last }}{% endfor %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
