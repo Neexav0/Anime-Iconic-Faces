@@ -7,6 +7,11 @@
     <h1 style="margin-top:8px">{{ patient.name or 'Patient' }}{% if patient.age %}, {{ patient.age }} yrs{% endif %}</h1>
     <p class="lead">{{ entries|length }} medicines confirmed by the patient against their packs. Medora flagged {{ result.alerts|length }} point(s) using sourced rules. Please mark each one as discussed and add a note for the patient.</p>
   </div>
+  {% if result.urgent %}<div class="urgent" role="alert"><div><h2>⚠ Danger signs reported</h2><p>{{ result.urgent|join(', ') }}: please advise urgent medical care (112 / 108).</p></div></div>{% endif %}
+  <div class="card health-card" style="grid-template-columns:1fr 1fr">
+    <div><div class="lbl">Reported allergies</div><b>{% if patient.allergies is none %}not asked yet{% elif not allergy_labels %}none known{% else %}{{ allergy_labels|join(', ') }}{% endif %}</b></div>
+    <div><div class="lbl">Reported symptoms</div><b>{{ symptom_labels|join(', ') or '—' }}</b></div>
+  </div>
   {% if saved %}<div class="ok-box" role="status">✓ Review saved. The patient now sees your notes on their Medora home screen.</div>{% endif %}
 
   <form method="post" class="stack">

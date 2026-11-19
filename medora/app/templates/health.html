@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="stack" method="post" action="/health">
+  <div>
+    <h1>{{ t('health_title') }}</h1>
+    <p class="lead">{{ t('health_sub') }}</p>
+  </div>
+
+  <section class="card stack">
+    <h2 style="margin:0">💊 {{ t('allergies_q') }}</h2>
+    <div class="tiles">
+      {% for g in groups %}
+      <label class="tile">
+        <input type="checkbox" name="allergy" value="{{ g.code }}" {{ 'checked' if g.code in chosen_allergies }}>
+        <span>{{ g[lang] or g.en }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    <label class="field"><span>{{ t('other_allergy') }}</span>
+      <input type="text" name="other_allergies" value="{{ other_allergies }}" maxlength="300" placeholder="e.g. Paracetamol, Combiflam">
+    </label>
+    <label class="tile none">
+      <input type="checkbox" name="no_allergies" id="no-allergies" {{ 'checked' if patient.allergies == [] }}>
+      <span>✓ {{ t('no_allergies') }}</span>
+    </label>
+  </section>
+
+  <section class="card stack">
+    <h2 style="margin:0">🩺 {{ t('symptoms_q') }}</h2>
+    <div class="tiles">
+      {% for s in symptoms if not s.red_flag %}
+      <label class="tile">
+        <input type="checkbox" name="symptom" value="{{ s.code }}" {{ 'checked' if s.code in chosen_symptoms }}>
+        <span><b aria-hidden="true">{{ s.icon }}</b> {{ s[lang] or s.en }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    <h3 style="margin:8px 0 0;color:var(--red)">⚠ {{ t('serious_q') }}</h3>
+    <div class="tiles">
+      {% for s in symptoms if s.red_flag %}
+      <label class="tile red">
+        <input type="checkbox" name="symptom" value="{{ s.code }}" {{ 'checked' if s.code in chosen_symptoms }}>
+        <span><b aria-hidden="true">{{ s.icon }}</b> {{ s[lang] or s.en }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </section>
+
+  <p class="small muted" style="margin:0">{{ t('disclaimer') }}</p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <button class="btn big" type="submit">✓ {{ t('save_health') }}</button>
+    <a class="btn big ghost" href="/">{{ t('discard') }}</a>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+// "No known allergies" and specific allergies are mutually exclusive.
+const none = document.getElementById('no-allergies');
+const picks = [...document.querySelectorAll('input[name=allergy]')], other = document.querySelector('input[name=other_allergies]');
+none.addEventListener('change', () => { if (none.checked) { picks.forEach(p => p.checked = false); other.value = ''; } });
+picks.forEach(p => p.addEventListener('change', () => { if (p.checked) none.checked = false; }));
+other.addEventListener('input', () => { if (other.value.trim()) none.checked = false; });
+</script>
+{% endblock %}

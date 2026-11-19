@@ -32,6 +32,24 @@
     </details>
   </div>
 
+  {# ---------------- danger signs always come first ---------------- #}
+  {% if result.urgent %}
+  <section class="urgent" role="alert">
+    <div class="status-icon" style="color:var(--red)" aria-hidden="true">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg>
+    </div>
+    <div>
+      <h2 id="urgent-h">{{ t('urgent_title') }}</h2>
+      <p id="urgent-s">{{ t('urgent_sub').replace('{x}', result.urgent|join(', ')) }}</p>
+      <div class="call">
+        <a class="btn" href="tel:112">📞 112</a>
+        <a class="btn" href="tel:108">🚑 108</a>
+        {{ listen('#urgent-h, #urgent-s', t) }}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
   {# ---------------- the one answer that matters ---------------- #}
   {% if not entries %}
   <section class="status empty">
@@ -102,6 +120,21 @@
   </div>
   {% endif %}
 
+  {# ---------------- allergies & symptoms ---------------- #}
+  <section class="card health-card">
+    <div>
+      <div class="lbl">{{ t('allergies_lbl') }}</div>
+      <div><b>{% if patient.allergies is none %}<span class="muted">{{ t('none_told') }}</span>{% elif not allergy_labels %}{{ t('no_allergies') }}{% else %}{{ allergy_labels|join(', ') }}{% endif %}</b></div>
+    </div>
+    <div>
+      <div class="lbl">{{ t('symptoms_lbl') }}</div>
+      <div><b>{% if symptom_labels %}{{ symptom_labels|join(', ') }}{% else %}<span class="muted">—</span>{% endif %}</b></div>
+    </div>
+    <a class="btn warm" href="/health">🩺 {{ t('update') if patient.allergies is not none or symptom_labels else t('health_title') }}</a>
+  </section>
+  {% if result.allergies_unmatched %}<div class="note">{{ t('allergy_unmatched').replace('{x}', result.allergies_unmatched|join(', ')) }}</div>{% endif %}
+  {% for s in result.symptoms_unlinked %}<div class="note">{{ t('symptom_unlinked').replace('{x}', s) }}</div>{% endfor %}
+
   {# ---------------- not assessed: gentle, never hidden ---------------- #}
   {% if result.not_assessed %}
   <div class="note">
@@ -140,15 +173,29 @@
     {% endfor %}
   </section>
 
-  {% if graph.meds|length > 1 %}
-  <section class="section card map-card">
-    <h2 style="margin-bottom:4px">{{ t('connect_title') }}</h2>
-    <p class="muted small" style="margin:0 0 14px">{{ t('connect_sub') }}</p>
-    <div data-map="map-data" data-label="{{ t('connect_title') }}"></div>
-    <div class="legend"><span><i></i>{{ t('contains') }}</span><span><i class="s"></i>⚠ {{ t('alerts') }}</span></div>
-    <script type="application/json" id="map-data">{{ graph|tojson }}</script>
+  <section class="section card">
+    <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:1;min-width:220px">
+        <h2 style="margin-bottom:4px" id="uses-h">💡 {{ t('used_for_title') }}</h2>
+        <p class="muted small" style="margin:0 0 16px" id="uses-s">{{ t('used_for_sub') }}</p>
+      </div>
+      {{ listen('#uses-h, .uses-say', t) }}
+    </div>
+    {% for e in entries %}
+    <div class="uses-med">
+      <h3>{{ e.name }}</h3>
+      {% for ing, use, url in uses[e.id] %}
+      <div class="uses-row">
+        <b>{{ ing }}</b>
+        <span class="uses-say"><span class="sr-only">{{ e.name }}, {{ ing }}: </span>{{ use or t('unknown_use') }}</span>
+        {% if url %}<a href="{{ url }}" target="_blank" rel="noopener">{{ t('label_link') }} ↗</a>{% endif %}
+      </div>
+      {% else %}
+      <div class="muted small">{{ t('unknown_use') }}</div>
+      {% endfor %}
+    </div>
+    {% endfor %}
   </section>
-  {% endif %}
   {% endif %}
 </div>
 {% endblock %}

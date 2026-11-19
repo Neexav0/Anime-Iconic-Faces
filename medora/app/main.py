@@ -45,6 +45,10 @@ DEMOS = {
                        ("Glycomet 500", "Diabetologist", None), ("Janumet 50/500", "Diabetologist (new)", "EXP 08/2025")]},
     "bleed": {"title": "Blood thinner + painkiller", "age": 74, "name": "Suresh Iyer",
               "entries": [("Warf 5", "Cardiologist", None), ("Combiflam", "Bought for knee pain", None), ("Pan 40", "", None)]},
+    "allergy": {"title": "Allergy + side-effect check", "age": 70, "name": "Lakshmi Rao",
+                "allergies": ["sulfa", "penicillin"], "symptoms": ["ankle_swelling", "drowsiness"],
+                "entries": [("Telma-H", "Cardiologist", None), ("Amlokind 5", "Cardiologist", None),
+                            ("Augmentin 625 Duo", "Dentist", None), ("Cetzine", "Chemist, for cold", None)]},
 }
 
 
@@ -68,8 +72,24 @@ def get_patient(s) -> Patient:
 def current_state(s, lang: str):
     patient = get_patient(s)
     entries = list(s.scalars(select(Entry).where(Entry.patient_id == patient.id).order_by(Entry.id)))
-    result = evaluate([e.as_engine_dict() for e in entries], {"age": patient.age}, KB, lang=lang)
+    result = evaluate([e.as_engine_dict() for e in entries], patient.as_engine_dict(), KB, lang=lang)
     return patient, entries, result
+
+
+def uses_view(entries, lang: str) -> dict:
+    """entry id -> [(ingredient display, 'commonly used for' text or None)]."""
+    out = {}
+    for e in entries:
+        rows, seen = [], set()
+        for ing in e.ingredients or []:
+            rec = KB.normalizer.recognise(ing["raw"])
+            if rec.canonical in seen:
+                continue
+            seen.add(rec.canonical)
+            rows.append((KB.display(rec.canonical) if rec.canonical else ing["raw"], KB.uses(rec.canonical, lang),
+                         KB.label_source(rec.canonical)["url"] if rec.canonical else None))
+        out[e.id] = rows
+    return out
 
 
 def latest_review(s, patient_id: int) -> Review | None:
@@ -143,7 +163,44 @@ def home(request: Request, added: int | None = None):
     added_entry = next((e for e in entries if e.id == added), None)
     return templates.TemplateResponse(request, "home.html", ctx(
         request, patient=patient, entries=entries, result=result, tags=tags, graph=graph, expiry=expiry,
-        review=review if review and review.reviewed_at else None, added_entry=added_entry))
+        review=review if review and review.reviewed_at else None, added_entry=added_entry,
+        uses=uses_view(entries, lang), allergy_labels=allergy_labels(patient, lang),
+        symptom_labels=[KB.symptom_label(c, lang) for c in patient.symptoms or [] if c in KB.symptom_by_code]))
+
+
+def allergy_labels(patient, lang: str) -> list[str]:
+    return [(KB.group_by_code[a].get(lang) or KB.group_by_code[a]["en"]) if a in KB.group_by_code else a
+            for a in patient.allergies or []]
+
+
+@app.get("/health", response_class=HTMLResponse)
+def health_page(request: Request):
+    lang = request.cookies.get("lang", "en")
+    with SessionLocal() as s:
+        patient = get_patient(s)
+    others = [a for a in patient.allergies or [] if a not in KB.group_by_code]
+    return templates.TemplateResponse(request, "health.html", ctx(
+        request, patient=patient, groups=KB.allergy_groups, symptoms=KB.symptoms,
+        chosen_allergies=set(patient.allergies or []), chosen_symptoms=set(patient.symptoms or []),
+        other_allergies=", ".join(others)))
+
+
+@app.post("/health")
+async def save_health(request: Request):
+    form = await request.form()
+    groups = [g for g in form.getlist("allergy") if g in KB.group_by_code]
+    others = [o.strip()[:60] for o in str(form.get("other_allergies", "")).split(",") if o.strip()][:10]
+    symptoms = [c for c in form.getlist("symptom") if c in KB.symptom_by_code]
+    if form.get("no_allergies") == "on":
+        groups, others = [], []
+    with SessionLocal() as s:
+        p = get_patient(s)
+        given = groups + [o for o in others if o not in groups]
+        # [] = "no known allergies" (told us); None = not told yet.
+        p.allergies = given if given else ([] if form.get("no_allergies") == "on" else None)
+        p.symptoms = symptoms
+        s.commit()
+    return RedirectResponse("/?health=1", status_code=303)
 
 
 @app.get("/pharmacist", response_class=HTMLResponse)
@@ -156,7 +213,9 @@ def pharmacist_view(request: Request):
     flagged = {eid for a in result["alerts"] for eid in a["entry_ids"]}
     return templates.TemplateResponse(request, "pharmacist.html", ctx(
         request, patient=patient, entries=entries, result=result, flagged=flagged, tags=tags, graph=graph,
-        expiry=expiry, review=review if review and review.reviewed_at else None, kb=KB))
+        expiry=expiry, review=review if review and review.reviewed_at else None, kb=KB,
+        allergy_labels=allergy_labels(patient, lang),
+        symptom_labels=[KB.symptom_label(c, lang) for c in patient.symptoms or [] if c in KB.symptom_by_code]))
 
 
 @app.get("/add", response_class=HTMLResponse)
@@ -313,6 +372,7 @@ def load_demo(key: str):
             s.delete(e)
         for r in s.scalars(select(Review).where(Review.patient_id == p.id)):
             s.delete(r)
+        p.allergies, p.symptoms = (demo or {}).get("allergies", []), (demo or {}).get("symptoms", [])
         if demo:
             p.name, p.age = demo["name"], demo["age"]
             for brand_name, note, exp in demo["entries"]:
@@ -352,7 +412,9 @@ def review_page(request: Request, token: str, saved: int = 0):
         patient, entries, result = current_state(s, "en")
     tags, graph, expiry = build_view(entries, result)
     return templates.TemplateResponse(request, "review.html", ctx(
-        request, review=review, patient=patient, entries=entries, result=result, tags=tags, expiry=expiry, saved=saved, kb=KB))
+        request, review=review, patient=patient, entries=entries, result=result, tags=tags, expiry=expiry, saved=saved, kb=KB,
+        allergy_labels=allergy_labels(patient, "en"),
+        symptom_labels=[KB.symptom_label(c) for c in patient.symptoms or [] if c in KB.symptom_by_code]))
 
 
 @app.post("/p/{token}")

@@ -1,0 +1,18 @@
+[
+  {"code": "penicillin", "en": "Penicillin / amoxicillin", "hi": "पेनिसिलिन / अमोक्सिसिलिन",
+   "members": ["amoxicillin", "clavulanic acid"],
+   "synonyms": ["penicillin", "penicillins", "beta lactam", "beta-lactam", "ampicillin", "augmentin", "amoxicillin", "amoxycillin"],
+   "source": "DM-AMOX"},
+  {"code": "nsaid", "en": "Painkillers like aspirin or ibuprofen (NSAIDs)", "hi": "एस्पिरिन या आइबुप्रोफ़ेन जैसे दर्द-निवारक (NSAID)",
+   "members": ["ibuprofen", "diclofenac", "aceclofenac", "mefenamic acid", "nimesulide", "naproxen", "aspirin"],
+   "synonyms": ["nsaid", "nsaids", "painkiller", "painkillers", "pain killer", "aspirin", "ibuprofen", "diclofenac", "brufen", "disprin"],
+   "source": "DM-NSAID-OTC"},
+  {"code": "sulfa", "en": "Sulfa drugs (sulfonamides)", "hi": "सल्फ़ा दवाएँ (सल्फ़ोनामाइड)",
+   "members": ["hydrochlorothiazide"],
+   "synonyms": ["sulfa", "sulpha", "sulfonamide", "sulfonamides", "sulphonamide", "septran", "cotrimoxazole", "co-trimoxazole", "sulfamethoxazole"],
+   "source": "DM-HCTZ"},
+  {"code": "macrolide", "en": "Azithromycin / erythromycin (macrolides)", "hi": "एज़िथ्रोमाइसिन / एरिथ्रोमाइसिन (मैक्रोलाइड)",
+   "members": ["azithromycin"],
+   "synonyms": ["macrolide", "macrolides", "erythromycin", "clarithromycin", "azithromycin", "azithral"],
+   "source": "DM-AZITHRO"}
+]

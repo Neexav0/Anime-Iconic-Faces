@@ -25,6 +25,14 @@
     <div class="stat {{ 'warn' if result.alerts }}"><b>{{ result.alerts|length }}</b><span>{{ t('alerts') }}</span></div>
     <div class="stat grey"><b>{{ result.not_assessed|length }}</b><span>{{ t('not_assessed') }}</span></div>
   </div>
+  {% if result.urgent %}<div class="urgent" role="alert"><div><h2>⚠ Danger signs reported</h2><p>{{ result.urgent|join(', ') }}: advise urgent medical care (112 / 108).</p></div></div>{% endif %}
+  <div class="card health-card">
+    <div><div class="lbl">Reported allergies</div><b>{% if patient.allergies is none %}<span class="muted">not asked yet</span>{% elif not allergy_labels %}none known{% else %}{{ allergy_labels|join(', ') }}{% endif %}</b>
+      {% if result.allergies_unmatched %}<div class="small muted">Not matched (not checked): {{ result.allergies_unmatched|join(', ') }}</div>{% endif %}</div>
+    <div><div class="lbl">Reported symptoms</div><b>{{ symptom_labels|join(', ') or '—' }}</b>
+      {% if result.symptoms_unlinked %}<div class="small muted">Not label-linked to current medicines: {{ result.symptoms_unlinked|join(', ') }}</div>{% endif %}</div>
+    <a class="btn ghost" href="/health">Edit</a>
+  </div>
   {% if review %}<div class="ok-box">✓ Reviewed{% if review.reviewer %} by <b>{{ review.reviewer }}</b>{% endif %} at {{ review.reviewed_at.strftime('%d %b %Y, %H:%M') }}{% if review.general_note %}: “{{ review.general_note }}”{% endif %}</div>{% endif %}
 
   <section class="section stack">

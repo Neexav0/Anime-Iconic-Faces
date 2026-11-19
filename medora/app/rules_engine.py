@@ -64,7 +64,7 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today
     names = {e["id"]: e["name"] for e in entries}
     alerts: list[dict] = []
 
-    def make_alert(rule, entry_ids, evidence, **fmt):
+    def make_alert(rule, entry_ids, evidence, extra_sources=(), **fmt):
         simple = rule.get("simple") or rule["message"]
         # Evidence lines are language-neutral, so the key is stable across languages and reloads.
         disc = hashlib.sha1("\n".join(evidence).encode()).hexdigest()[:8]
@@ -77,7 +77,7 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today
             "entry_ids": sorted(set(entry_ids)),
             "entries": [names[i] for i in sorted(set(entry_ids))],
             "evidence": evidence,
-            "sources": [kb.sources[s] for s in rule["sources"] if s in kb.sources],
+            "sources": [kb.sources[s] for s in rule["sources"] if s in kb.sources] + list(extra_sources),
         })
 
     # Index: ingredient key -> list of (entry_id, ingredient)
@@ -136,6 +136,50 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today
                                                  f"Patient age: {age}"],
                                    items=f"{kb.display(ing['canonical'])} ({names[eid]})")
 
+        elif t == "allergy_match":
+            for raw in patient.get("allergies") or []:
+                members, group = resolve_allergy(raw, kb)
+                if not members:
+                    continue
+                label = (group.get(lang) or group["en"]) if group and clean(raw) == group["code"] else raw
+                for eid, ings in resolved.items():
+                    hit = [i for i in ings if i["canonical"] in members]
+                    if not hit:
+                        continue
+                    direct = group is None or any(clean(raw) in {i["canonical"], clean(kb.display(i["canonical"]))} for i in hit)
+                    gtxt = ""
+                    if group and not direct:
+                        gname = group.get(lang) or group["en"]
+                        if clean(raw) == group["code"]:  # the allergy *is* the group: don't repeat its name
+                            gtxt = " (जो इसी समूह की दवा है)" if lang == "hi" else " (which belongs to this group)"
+                        else:
+                            gtxt = f" (उसी समूह की दवा: {gname})" if lang == "hi" else f" (same group: {gname})"
+                    extra = [kb.sources[group["source"]]] if group and group["source"] in kb.sources else []
+                    make_alert(rule, [eid], [f"Reported allergy: {raw}"] +
+                               [f"{names[eid]}: {kb.display(i['canonical'])} {i['strength']}".strip() for i in hit],
+                               extra_sources=extra, allergy=label, entry=names[eid],
+                               ingredient=_join([kb.display(i["canonical"]) for i in hit], lang), group=gtxt)
+
+        elif t == "symptom_side_effect":
+            for code in patient.get("symptoms") or []:
+                if code not in kb.symptom_by_code:
+                    continue
+                hits = [(eid, i) for eid, ings in resolved.items() for i in ings
+                        if i["canonical"] and code in kb.drug_info.get(i["canonical"], {}).get("side_effects", [])]
+                if not hits:
+                    continue
+                seen, uniq = set(), []
+                for eid, i in hits:
+                    if (eid, i["canonical"]) not in seen:
+                        seen.add((eid, i["canonical"]))
+                        uniq.append((eid, i))
+                make_alert(rule, [eid for eid, _ in uniq],
+                           [f"Reported symptom: {kb.symptom_label(code)}"] +
+                           [f"{names[eid]}: {kb.display(i['canonical'])} lists it as a side effect" for eid, i in uniq],
+                           extra_sources=[kb.label_source(c) for c in sorted({i["canonical"] for _, i in uniq})],
+                           symptom=kb.symptom_label(code, lang),
+                           items=_join([f"{kb.display(i['canonical'])} ({names[eid]})" for eid, i in uniq], lang))
+
         elif t == "expired":
             for e in entries:
                 exp = parse_expiry(e.get("expiry"))
@@ -188,5 +232,33 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today
             "count": len({eid for eid, _ in hits}),
         })
 
+    # Danger signs are always surfaced, whatever the medicines.
+    urgent = [kb.symptom_label(c, lang) for c in patient.get("symptoms") or []
+              if kb.symptom_by_code.get(c, {}).get("red_flag")]
+    flagged_symptoms = {a["evidence"][0].split(": ", 1)[1] for a in alerts if a["rule_id"] == "R-SFX-001"}
+    # Danger signs never get the softer "tell your doctor if it continues" note: they only get the urgent banner.
+    symptoms_unlinked = [kb.symptom_label(c, lang) for c in patient.get("symptoms") or []
+                         if c in kb.symptom_by_code and not kb.symptom_by_code[c].get("red_flag")
+                         and kb.symptom_label(c) not in flagged_symptoms]
+    allergies_unmatched = [a for a in patient.get("allergies") or [] if not resolve_allergy(a, kb)[0]]
+
     return {"alerts": alerts, "not_assessed": not_assessed, "ingredient_view": ingredient_view,
+            "urgent": urgent, "symptoms_unlinked": symptoms_unlinked, "allergies_unmatched": allergies_unmatched,
             "rules_checked": [r["rule_id"] for r in kb.rules]}
+
+
+def resolve_allergy(raw: str, kb: KB) -> tuple[set[str], dict | None]:
+    """Allergy text -> (ingredient set, documented group or None). Unknown -> (set(), None)."""
+    c = clean(raw)
+    if not c:
+        return set(), None
+    for g in kb.allergy_groups:
+        if c == g["code"] or c in {clean(s) for s in g["synonyms"]}:
+            return set(g["members"]), g
+    rec = kb.normalizer.recognise(raw)
+    if rec.canonical:
+        return {rec.canonical}, None
+    b = kb.brand_matcher.exact(raw)
+    if b:
+        return {i["canonical"] for i in b["ingredients"]}, None
+    return set(), None

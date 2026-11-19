@@ -45,6 +45,12 @@ def build_pdf(patient, entries, result, kb) -> bytes:
     pt.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, LINE), ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F3F7F6")),
                             ("VALIGN", (0, 0), (-1, -1), "MIDDLE")]))
     story += [pt]
+    groups = {g["code"]: g["en"] for g in kb.allergy_groups}
+    allergies = "not asked" if patient.allergies is None else (", ".join(groups.get(a, a) for a in patient.allergies) or "none known")
+    symptoms = ", ".join(kb.symptom_label(c) for c in patient.symptoms or []) or "none reported"
+    story += [Spacer(1, 4), Paragraph(f"<b>Reported allergies:</b> {_esc(allergies)} &nbsp;&nbsp; <b>Reported symptoms:</b> {_esc(symptoms)}", body)]
+    if result.get("urgent"):
+        story.append(Paragraph(f"<font color='#A52A2A'><b>Danger signs reported:</b> {_esc(', '.join(result['urgent']))}: advise urgent medical care.</font>", body))
 
     # 1. Confirmed medicines
     story.append(Paragraph("1. Confirmed medicines (user-confirmed against the pack)", h2))

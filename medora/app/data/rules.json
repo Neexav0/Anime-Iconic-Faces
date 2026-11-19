@@ -80,6 +80,38 @@
     }
   },
   {
+    "rule_id": "R-ALG-001",
+    "type": "allergy_match",
+    "params": {},
+    "sources": ["LABEL-HYPERSENS"],
+    "scope": "A confirmed medicine contains an ingredient the patient reported an allergy to, or one from the same documented allergy group (penicillins, NSAIDs, sulfonamides, macrolides).",
+    "title": {"en": "Matches a reported allergy", "hi": "बताई गई एलर्जी से मेल"},
+    "message": {
+      "en": "Patient-reported allergy: {allergy}. {entry} contains {ingredient}{group}. Product labels advise against use with a known allergy to an ingredient. Review with a pharmacist.",
+      "hi": "मरीज़ द्वारा बताई गई एलर्जी: {allergy}। {entry} में {ingredient} है{group}। लेबल के अनुसार किसी घटक से एलर्जी होने पर इसका उपयोग नहीं करना चाहिए। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    },
+    "simple": {
+      "en": "You told us you are allergic to {allergy}. {entry} contains {ingredient}{group}. Ask your pharmacist or doctor before taking it.",
+      "hi": "आपने {allergy} से एलर्जी बताई है। {entry} में {ingredient} है{group}। इसे लेने से पहले अपने फ़ार्मासिस्ट या डॉक्टर से पूछें।"
+    }
+  },
+  {
+    "rule_id": "R-SFX-001",
+    "type": "symptom_side_effect",
+    "params": {},
+    "sources": [],
+    "scope": "A symptom the patient reported is listed as a side effect in the product label of one of their confirmed medicines. This is not a diagnosis: the symptom may have another cause.",
+    "title": {"en": "Symptom listed as a side effect", "hi": "लक्षण, दुष्प्रभाव के रूप में सूचीबद्ध"},
+    "message": {
+      "en": "Patient-reported symptom: {symptom}. It is listed as a side effect in the labels of: {items}. It may also have another cause. Review with a pharmacist.",
+      "hi": "मरीज़ द्वारा बताया गया लक्षण: {symptom}। यह इनके लेबल में दुष्प्रभाव के रूप में सूचीबद्ध है: {items}। इसका कोई और कारण भी हो सकता है। फ़ार्मासिस्ट से जाँच करवाएँ।"
+    },
+    "simple": {
+      "en": "You mentioned \"{symptom}\". This is a known side effect of {items}. Tell your pharmacist or doctor, and do not change a prescribed medicine on your own.",
+      "hi": "आपने \"{symptom}\" बताया। यह {items} का जाना-पहचाना दुष्प्रभाव है। अपने फ़ार्मासिस्ट या डॉक्टर को बताएँ, और डॉक्टर की लिखी दवा अपने आप न बदलें।"
+    }
+  },
+  {
     "rule_id": "R-EXP-001",
     "type": "expired",
     "params": {},

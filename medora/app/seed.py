@@ -10,7 +10,8 @@ from .models import Brand, BrandIngredient, Ingredient, Patient
 
 def _add_missing_columns() -> None:
     """Tiny forward-only migration for columns added after the first deploy."""
-    wanted = {"entries": {"expiry": "VARCHAR(40)", "batch": "VARCHAR(60)"}}
+    wanted = {"entries": {"expiry": "VARCHAR(40)", "batch": "VARCHAR(60)"},
+              "patients": {"allergies": "JSON", "symptoms": "JSON"}}
     insp = inspect(engine)
     with engine.begin() as conn:
         for table, cols in wanted.items():

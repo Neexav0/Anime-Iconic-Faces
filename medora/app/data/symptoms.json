@@ -1,0 +1,22 @@
+[
+  {"code": "drowsiness", "icon": "😴", "en": "Drowsy or sleepy", "hi": "नींद आना या सुस्ती"},
+  {"code": "dizziness", "icon": "💫", "en": "Dizziness", "hi": "चक्कर आना"},
+  {"code": "nausea", "icon": "🤢", "en": "Nausea or vomiting", "hi": "जी मिचलाना या उल्टी"},
+  {"code": "stomach_pain", "icon": "🔥", "en": "Stomach pain or acidity", "hi": "पेट दर्द या एसिडिटी"},
+  {"code": "diarrhea", "icon": "🚽", "en": "Loose motions", "hi": "दस्त"},
+  {"code": "constipation", "icon": "🧱", "en": "Constipation", "hi": "कब्ज़"},
+  {"code": "dry_mouth", "icon": "👄", "en": "Dry mouth", "hi": "मुँह सूखना"},
+  {"code": "ankle_swelling", "icon": "🦶", "en": "Swollen ankles or feet", "hi": "टखनों या पैरों में सूजन"},
+  {"code": "muscle_pain", "icon": "💪", "en": "Muscle pain or weakness", "hi": "मांसपेशियों में दर्द या कमज़ोरी"},
+  {"code": "headache", "icon": "🤕", "en": "Headache", "hi": "सिरदर्द"},
+  {"code": "bruising", "icon": "🩹", "en": "Bruising easily or bleeding gums", "hi": "आसानी से नील पड़ना या मसूड़ों से खून"},
+  {"code": "palpitations", "icon": "💓", "en": "Fast or pounding heartbeat", "hi": "तेज़ या धक-धक धड़कन"},
+  {"code": "sleeplessness", "icon": "🌙", "en": "Trouble sleeping", "hi": "नींद न आना"},
+  {"code": "shakiness", "icon": "🍬", "en": "Shaky, sweaty or very hungry", "hi": "काँपना, पसीना या बहुत भूख लगना"},
+  {"code": "rash", "icon": "🔴", "en": "Skin rash or itching", "hi": "त्वचा पर दाने या खुजली"},
+  {"code": "frequent_urination", "icon": "💧", "en": "Passing urine more often", "hi": "बार-बार पेशाब आना"},
+  {"code": "breathing", "icon": "🫁", "en": "Trouble breathing", "hi": "साँस लेने में तकलीफ़", "red_flag": true},
+  {"code": "face_swelling", "icon": "⚠️", "en": "Swelling of face, lips or tongue", "hi": "चेहरे, होंठ या जीभ में सूजन", "red_flag": true},
+  {"code": "black_stool", "icon": "⚠️", "en": "Black or bloody stools, or vomiting blood", "hi": "काला या खूनी मल, या खून की उल्टी", "red_flag": true},
+  {"code": "chest_pain", "icon": "❤️", "en": "Chest pain", "hi": "सीने में दर्द", "red_flag": true}
+]

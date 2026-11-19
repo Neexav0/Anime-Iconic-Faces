@@ -42,7 +42,12 @@ class Patient(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120), default="")
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    allergies: Mapped[list | None] = mapped_column(JSON, nullable=True)  # group codes or free text
+    symptoms: Mapped[list | None] = mapped_column(JSON, nullable=True)   # codes from symptoms.json
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+    def as_engine_dict(self) -> dict:
+        return {"age": self.age, "allergies": self.allergies or [], "symptoms": self.symptoms or []}
 
 
 class Draft(Base):

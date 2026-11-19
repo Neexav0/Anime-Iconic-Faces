@@ -24,6 +24,9 @@ class KB:
     brands: list[dict]                    # [{id, name, manufacturer, form, ingredients:[{canonical, strength}]}]
     rules: list[dict]
     sources: dict[str, dict]
+    drug_info: dict[str, dict] = field(default_factory=lambda: {k: v for k, v in load_json("drug_info.json").items() if not k.startswith("_")})
+    symptoms: list[dict] = field(default_factory=lambda: load_json("symptoms.json"))
+    allergy_groups: list[dict] = field(default_factory=lambda: load_json("allergy_groups.json"))
     normalizer: IngredientNormalizer = field(init=False)
     brand_matcher: BrandMatcher = field(init=False)
 
@@ -31,10 +34,27 @@ class KB:
         self.normalizer = IngredientNormalizer(list(self.ingredients.values()))
         self.brand_matcher = BrandMatcher(self.brands)
         self.brand_by_id = {b["id"]: b for b in self.brands}
+        self.symptom_by_code = {s["code"]: s for s in self.symptoms}
+        self.group_by_code = {g["code"]: g for g in self.allergy_groups}
 
     def display(self, canonical: str) -> str:
         ing = self.ingredients.get(canonical)
         return ing["display"] if ing else canonical
+
+    def uses(self, canonical: str | None, lang: str = "en") -> str | None:
+        info = self.drug_info.get(canonical or "")
+        return (info["uses"].get(lang) or info["uses"]["en"]) if info else None
+
+    def symptom_label(self, code: str, lang: str = "en") -> str:
+        s = self.symptom_by_code.get(code)
+        return (s.get(lang) or s["en"]) if s else code
+
+    def label_source(self, canonical: str) -> dict:
+        """Per-ingredient product-label source (DailyMed search link)."""
+        return {"id": f"DM-{canonical.upper().replace(' ', '-')}",
+                "title": f"{self.display(canonical)} product label: indications and adverse reactions",
+                "publisher": "DailyMed, U.S. National Library of Medicine",
+                "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?labeltype=all&query=" + canonical.replace(" ", "+")}
 
 
 def build_kb(ingredients: list[dict], brands: list[dict], rules: list[dict] | None = None,
