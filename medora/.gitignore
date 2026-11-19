@@ -5,3 +5,4 @@ __pycache__/
 medora.db
 app/data/vision_cache/
 *.pdf
+.claude/
