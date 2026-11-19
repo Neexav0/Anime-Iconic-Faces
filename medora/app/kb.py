@@ -27,6 +27,7 @@ class KB:
     drug_info: dict[str, dict] = field(default_factory=lambda: {k: v for k, v in load_json("drug_info.json").items() if not k.startswith("_")})
     symptoms: list[dict] = field(default_factory=lambda: load_json("symptoms.json"))
     allergy_groups: list[dict] = field(default_factory=lambda: load_json("allergy_groups.json"))
+    dose_limits: dict = field(default_factory=lambda: load_json("dose_limits.json"))
     normalizer: IngredientNormalizer = field(init=False)
     brand_matcher: BrandMatcher = field(init=False)
 

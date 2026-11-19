@@ -40,5 +40,6 @@
   {"name": "Thyronorm 50", "manufacturer": "Abbott", "form": "tablet", "ingredients": [["levothyroxine", "50 mcg"]]},
   {"name": "Shelcal 500", "manufacturer": "Torrent", "form": "tablet", "ingredients": [["calcium carbonate", "1250 mg"], ["vitamin d3", "250 IU"]]},
   {"name": "Augmentin 625 Duo", "manufacturer": "GSK", "form": "tablet", "ingredients": [["amoxicillin", "500 mg"], ["clavulanic acid", "125 mg"]]},
-  {"name": "Azithral 500", "manufacturer": "Alembic", "form": "tablet", "ingredients": [["azithromycin", "500 mg"]]}
+  {"name": "Azithral 500", "manufacturer": "Alembic", "form": "tablet", "ingredients": [["azithromycin", "500 mg"]]},
+  {"name": "Calpol 250 Suspension", "manufacturer": "GSK", "form": "suspension", "ingredients": [["paracetamol", "250 mg/5 ml"]]}
 ]

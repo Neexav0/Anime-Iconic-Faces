@@ -5,13 +5,16 @@ from sqlalchemy.orm import selectinload
 from .db import Base, SessionLocal, engine
 from .kb import KB, build_kb, load_json
 from .matching import parse_mg
-from .models import Brand, BrandIngredient, Ingredient, Patient
+from .models import Brand, BrandIngredient, Ingredient
 
 
 def _add_missing_columns() -> None:
     """Tiny forward-only migration for columns added after the first deploy."""
-    wanted = {"entries": {"expiry": "VARCHAR(40)", "batch": "VARCHAR(60)"},
-              "patients": {"allergies": "JSON", "symptoms": "JSON"}}
+    wanted = {"entries": {"expiry": "VARCHAR(40)", "batch": "VARCHAR(60)", "per_day": "FLOAT"},
+              "patients": {"allergies": "JSON", "symptoms": "JSON", "account_id": "INTEGER", "weight_kg": "FLOAT"},
+              "drafts": {"patient_id": "INTEGER"},
+              "accounts": {"recovery_hash": "VARCHAR(255)"},
+              "reviews": {"expires_at": "DATETIME"}}
     insp = inspect(engine)
     with engine.begin() as conn:
         for table, cols in wanted.items():
@@ -46,8 +49,6 @@ def init_db() -> None:
                 brand.ingredients.append(BrandIngredient(ingredient=ing_by_name[canon], strength=strength,
                                                          strength_mg=parse_mg(strength)))
             s.add(brand)
-        if not s.scalar(select(Patient).limit(1)):
-            s.add(Patient(name="", age=None))
         s.commit()
 
 

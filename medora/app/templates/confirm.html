@@ -1,12 +1,13 @@
 {% extends "base.html" %}
-{% block width %}{% endblock %}
+{% block title %}{{ t('confirm_title') }} | Medora{% endblock %}
+{% block width %}{{ '' if draft.origin in ['photo', 'qr'] and x else 'narrow' }}{% endblock %}
 {% block content %}
 <div class="stack">
-  <div class="steps" aria-label="Step 2 of 3">
-    <span class="step done"><b>✓</b>{{ t('step_photo') }}</span><span class="step-line"></span>
-    <span class="step on"><b>2</b>{{ t('step_check') }}</span><span class="step-line"></span>
-    <span class="step"><b>3</b>{{ t('step_done') }}</span>
-  </div>
+  <ol class="steps" aria-label="Step 2 of 3">
+    <li class="done"><b>1</b>{{ t('step_photo') }}</li>
+    <li class="on" aria-current="step"><b>2</b>{{ t('step_check') }}</li>
+    <li><b>3</b>{{ t('step_done') }}</li>
+  </ol>
   <div>
     <h1>{{ t('confirm_title') }}</h1>
     <p class="lead">{{ t('confirm_sub') }}</p>
@@ -18,7 +19,7 @@
     {% if draft.origin == 'qr' and x %}
     <aside class="photo stack">
       <div class="card stack small">
-        <b>▦ Read from the strip's QR code</b>
+        <b>Read from the strip's QR code</b>
         <div>{{ t('brand') }}: <b>{{ x.brand_as_printed or '—' }}</b></div>
         {% if x.manufacturer_as_printed %}<div class="muted">{{ x.manufacturer_as_printed }}</div>{% endif %}
         {% if x.batch_as_printed %}<div>{{ t('batch_field') }}: <b>{{ x.batch_as_printed }}</b></div>{% endif %}
@@ -53,7 +54,7 @@
         <input type="text" name="name" id="name" value="{{ brand_text }}" required placeholder="e.g. Dolo 650">
       </label>
       <div>
-        <div class="small muted" style="margin-bottom:6px">{{ t('catalogue_match') }}</div>
+        <div class="field-label">{{ t('catalogue_match') }}</div>
         <div class="sugg" id="sugg"></div>
       </div>
 
@@ -63,7 +64,7 @@
 
       <div class="field">
         <span>{{ t('composition') }}
-          {% if rows_source == 'pack' %}<span class="badge">{{ t('read_from_pack') }}</span>{% elif rows_source == 'qr' %}<span class="badge">QR</span>{% elif rows_source == 'catalogue' %}<span class="badge warn">from catalogue · {{ t('check_this') }}</span>{% endif %}
+          {% if rows_source == 'pack' %}<span class="badge">{{ t('read_from_pack') }}</span>{% elif rows_source == 'qr' %}<span class="badge">QR</span>{% elif rows_source == 'catalogue' %}<span class="badge warn">From catalogue: {{ t('check_this')|lower }}</span>{% endif %}
         </span>
         <div id="rows" class="stack">
           {% for r in rows %}
@@ -75,7 +76,7 @@
           </div>
           {% endfor %}
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="row-actions">
           <button type="button" class="btn ghost" id="add-row">+ {{ t('add_row') }}</button>
           <button type="button" class="btn ghost" id="use-cat" hidden>{{ t('use_catalogue') }}</button>
         </div>
@@ -92,15 +93,20 @@
         </label>
       </div>
 
+      <label class="field"><span>{{ 'रोज़ कितनी लेते हैं (वैकल्पिक)' if lang == 'hi' else 'How much a day (optional)' }}</span>
+        <input type="number" name="per_day" min="0" max="500" step="0.5" inputmode="decimal" class="w-short" aria-describedby="perday-help">
+        <small id="perday-help" class="help">{{ 'गोली या कैप्सूल की संख्या। सिरप के लिए दिन भर के कुल ml। इससे Medora दैनिक अधिकतम मात्रा जाँचता है।' if lang == 'hi' else 'Number of tablets or capsules. For a syrup, the total ml in a day. Medora uses it to check the daily maximum.' }}</small>
+      </label>
+
       <label class="field"><span>{{ t('prescriber') }}</span>
-        <input type="text" name="note" maxlength="200" placeholder="Dr. Mehta, cardiology · chemist near home">
+        <input type="text" name="note" maxlength="200" placeholder="Dr. Mehta, cardiology, or the chemist near home">
       </label>
 
       <label class="confirm-box">
         <input type="checkbox" name="confirmed" id="confirmed">
         <span>{{ t('confirm_check') }}</span>
       </label>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div class="row-actions">
         <button class="btn big" type="submit" id="submit" disabled>{{ t('confirm_btn') }}</button>
       </div>
     </form>
@@ -144,11 +150,11 @@ async function recognise(row) {
   if (!v) { out.textContent = ''; out.className = 'rec'; row.dataset.key = ''; crossCheck(); return; }
   const r = recCache[v] || (recCache[v] = await fetch('/api/recognise?name=' + encodeURIComponent(v)).then(r => r.json()));
   if (r.canonical) {
-    out.className = 'rec ok'; out.textContent = '✓ ' + T.recognised_as + ' ' + r.display + (r.method !== 'exact' ? ' (' + r.method + ')' : '');
+    out.className = 'rec ok'; out.textContent = T.recognised_as + ' ' + r.display + (r.method !== 'exact' ? ' (' + r.method + ')' : '');
     row.dataset.key = r.display.toLowerCase();
   } else {
     out.className = 'rec bad'; row.dataset.key = '?' + v.toLowerCase();
-    out.innerHTML = '⚠ ' + esc(T.not_recognised) + (r.suggestion ? ` <button type="button" class="btn plain" style="padding:0 4px;color:var(--teal)">${esc(T.did_you_mean)} ${esc(r.suggestion)}?</button>` : '');
+    out.innerHTML = esc(T.not_recognised) + (r.suggestion ? ` <button type="button" class="btn plain inline">${esc(T.did_you_mean)} ${esc(r.suggestion)}?</button>` : '');
     const b = out.querySelector('button');
     if (b) b.onclick = () => { row.querySelector('[name=ing_raw]').value = r.suggestion; recognise(row); };
   }
@@ -160,7 +166,7 @@ function renderSugg() {
   candidates.forEach(b => {
     const btn = document.createElement('button'); btn.type = 'button';
     btn.className = selected && selected.id === b.id ? 'on' : '';
-    btn.innerHTML = `<b>${esc(b.name)}</b> <small>${esc(b.manufacturer)} · ${esc(b.form)} · ${b.ingredients.map(i => esc(i.display + ' ' + i.strength)).join(' + ')}</small>`;
+    btn.innerHTML = `<b>${esc(b.name)}</b> <small>${esc(b.manufacturer)}, ${esc(b.form)}: ${b.ingredients.map(i => esc(i.display + ' ' + i.strength)).join(' + ')}</small>`;
     btn.onclick = () => selectBrand(selected && selected.id === b.id ? null : b);
     sugg.appendChild(btn);
   });
@@ -180,8 +186,8 @@ function crossCheck() {
   const same = cat.length === got.length && cat.every((c, i) => c === got[i]);
   xc.hidden = false; xc.className = 'xcheck ' + (same ? 'match' : 'mismatch');
   xc.innerHTML = same
-    ? `✓ Composition matches Medora's catalogue entry for <b>${esc(selected.name)}</b>.`
-    : `⚠ Composition differs from the catalogue entry for <b>${esc(selected.name)}</b> (${selected.ingredients.map(i => esc(i.display)).join(' + ')}). Check the pack. If you save it like this, it will be flagged for pharmacist review.`;
+    ? `Composition matches Medora's catalogue entry for <b>${esc(selected.name)}</b>.`
+    : `Composition differs from the catalogue entry for <b>${esc(selected.name)}</b> (${selected.ingredients.map(i => esc(i.display)).join(' + ')}). Check the pack. If you save it like this, it will be flagged for pharmacist review.`;
 }
 const searchBrands = debounce(async () => {
   const q = nameIn.value.trim();

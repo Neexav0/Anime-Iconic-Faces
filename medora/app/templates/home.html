@@ -1,55 +1,42 @@
 {% extends "base.html" %}
+{% block title %}{{ t('nav_passport') }} | Medora{% endblock %}
 {% block bodyclass %}home{% endblock %}
-{% block width %}home-wrap{% endblock %}
+{% block width %}wide{% endblock %}
 {% macro speak_btn(target, t, label=None, cls='') -%}
 <button type="button" class="btn listen {{ cls }}" data-speak="{{ target }}" data-label="{{ label or '' }}" data-stop="{{ t('stop') if label else '' }}" aria-label="{{ label or t('listen') }}">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>
   {% if label %}<span class="lbl">{{ label }}</span>{% endif %}
 </button>
 {%- endmacro %}
-{% macro med_icon(e, n_ing) -%}
-{% set f = (e.form or '')|lower %}
-{% if 'capsule' in f %}<svg width="44" height="44" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="17" width="26" height="12" rx="6" transform="rotate(-40 19 23)"/><path d="M15.5 16.5l7 13" /><rect x="18" y="22" width="26" height="12" rx="6" transform="rotate(-40 31 28)"/><path d="M27.5 21.5l7 13"/></svg>
-{% elif 'syrup' in f or 'suspension' in f %}<svg width="44" height="44" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M19 5h10v6l4 5v26a2 2 0 0 1-2 2H17a2 2 0 0 1-2-2V16l4-5z"/><path d="M15 24h18M15 34h18"/></svg>
-{% elif n_ing >= 3 %}<svg width="44" height="44" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="10" y="4" width="28" height="40" rx="6"/><circle cx="19" cy="14" r="3.6"/><circle cx="29" cy="14" r="3.6"/><circle cx="19" cy="24" r="3.6"/><circle cx="29" cy="24" r="3.6"/><circle cx="19" cy="34" r="3.6"/><circle cx="29" cy="34" r="3.6"/></svg>
-{% else %}<svg width="44" height="44" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><ellipse cx="18" cy="21" rx="12" ry="8" transform="rotate(-20 18 21)"/><path d="M9 25l18-8"/><ellipse cx="30" cy="30" rx="12" ry="8" transform="rotate(-20 30 30)"/><path d="M21 34l18-8"/></svg>
-{% endif %}
-{%- endmacro %}
 {% block content %}
+{% set hi = lang == 'hi' %}
 {% set n = result.alerts|length %}
 {% set notes = review['items'] if review else {} %}
 
-{# ---------------- hero ---------------- #}
-<section class="hero">
-  <div class="hero-text">
-    {% with uid='h', size='md', comma=True %}{% include "_namaste.html" %}{% endwith %}
-    <h1 class="hero-name">{% if patient.name %}{{ patient.name }} {{ 'जी' if lang == 'hi' else 'ji' }}{% else %}{{ t('greet') }}{% endif %}</h1>
-    <p class="hero-meta">
-      {% if patient.age %}{{ patient.age }} {{ t('years') }} <span class="dot">·</span> {% endif %}{{ entries|length }} {{ t('medicine_count') }}
-      {% if review %}<span class="glass-pill">✓ {{ t('reviewed_by') }}</span>{% endif %}
-    </p>
+<section class="page-head">
+  <div>
+    <h1>{{ t('greet') }}, {% if patient.name %}{{ patient.name }}{% if not result.is_child %} {{ 'जी' if hi else 'ji' }}{% endif %}{% endif %}</h1>
+    <p class="meta">{% if result.is_child %}<span class="badge child">{{ 'बच्चा' if hi else 'Child' }}</span> {% endif %}{% if patient.age is not none %}{{ patient.age }} {{ t('years') }}, {% endif %}{% if patient.weight_kg %}{{ '%g'|format(patient.weight_kg) }} kg, {% endif %}{{ entries|length }} {{ t('medicine_count') }}</p>
   </div>
-  {% include "_pills.html" %}
+  {% if review %}<span class="badge ok big">{{ t('reviewed_by') }}{% if review.reviewer %}: {{ review.reviewer }}{% endif %}</span>{% endif %}
 </section>
 
 {% if added_entry %}
 <div class="toast" role="status">
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0b6b5d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
-  <span>{{ t('added_toast') }}: {{ added_entry.name }} <span class="muted" style="font-weight:500">· {{ t('step_done') }} 3/3</span></span>
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+  <span>{{ t('added_toast') }}: <b>{{ added_entry.name }}</b></span>
 </div>
 {% endif %}
 
 {% if result.urgent %}
 <section class="urgent" role="alert">
-  <div class="status-icon" style="color:var(--red)" aria-hidden="true">
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg>
-  </div>
+  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg>
   <div>
     <h2 id="urgent-h">{{ t('urgent_title') }}</h2>
     <p id="urgent-s">{{ t('urgent_sub').replace('{x}', result.urgent|join(', ')) }}</p>
     <div class="call">
-      <a class="btn" href="tel:112">📞 112</a>
-      <a class="btn" href="tel:108">🚑 108</a>
+      <a class="btn danger-solid" href="tel:112">{{ 'कॉल करें' if hi else 'Call' }} 112</a>
+      <a class="btn danger-solid" href="tel:108">{{ 'एम्बुलेंस' if hi else 'Ambulance' }} 108</a>
       {{ speak_btn('#urgent-h, #urgent-s', t, t('listen')) }}
     </div>
   </div>
@@ -61,11 +48,11 @@
     {% if not entries %}
     <section class="panel empty-state">
       <h2>{{ t('welcome_title') }}</h2>
-      <p class="lead">{{ t('welcome_sub') }}</p>
-      <a class="btn big" href="/add">📷 {{ t('nav_add') }}</a>
+      <p>{{ t('welcome_sub') }}</p>
+      <a class="btn big" href="/add">{{ t('nav_add') }}</a>
     </section>
     {% elif n %}
-    <section class="panel asks-panel" aria-labelledby="ask-h">
+    <section class="panel asks" aria-labelledby="ask-h">
       <div class="panel-head">
         <h2 id="ask-h">{{ t('ask_title_1') if n == 1 else t('ask_title_n').replace('{n}', n|string) }}</h2>
         {{ speak_btn('#ask-h, .q-say', t, t('listen_all'), 'pill') }}
@@ -78,7 +65,7 @@
             <p class="q">{{ a.question }}</p>
             <p class="q-why q-say"><span class="sr-only">{{ a.question }} </span>{{ a.simple }}</p>
             {% set r = notes.get(a.key) %}
-            {% if r and (r.done or r.note) %}<div class="reviewed">✓ {{ t('reviewed_by') }}{% if r.note %}: <q>{{ r.note }}</q>{% endif %}</div>{% endif %}
+            {% if r and (r.done or r.note) %}<p class="reviewed">{{ t('reviewed_by') }}{% if r.note %}: <q>{{ r.note }}</q>{% endif %}</p>{% endif %}
           </div>
           {{ speak_btn(a.question ~ ' ' ~ a.simple, t, None, 'sq') }}
         </li>
@@ -86,16 +73,16 @@
       </ol>
       {% if review %}
       {% set stale = result.alerts|rejectattr('key', 'in', notes)|list %}
-      {% if review.general_note %}<div class="review-banner">✓ {{ review.reviewer or t('reviewed_by') }}: <span style="font-weight:400;color:var(--ink-2)">{{ review.general_note }}</span></div>{% endif %}
-      {% if stale %}<div class="note" style="margin-top:12px">{{ 'आपकी सूची समीक्षा के बाद बदली है। कृपया अपने फ़ार्मासिस्ट को फिर से दिखाएँ।' if lang == 'hi' else 'Your list changed after this review. Please show your pharmacist again.' }}</div>{% endif %}
+      {% if review.general_note %}<div class="review-banner"><b>{{ review.reviewer or t('reviewed_by') }}:</b> {{ review.general_note }}</div>{% endif %}
+      {% if stale %}<div class="note">{{ 'आपकी सूची समीक्षा के बाद बदली है। अपने फ़ार्मासिस्ट को फिर से दिखाएँ।' if hi else 'Your list changed after this review. Show your pharmacist again.' }}</div>{% endif %}
       {% endif %}
     </section>
     {% else %}
-    <section class="panel good-panel">
+    <section class="panel good">
       <div class="panel-head">
         <div>
-          <h2 id="good-h">✓ {{ t('all_good_title') }}</h2>
-          <p class="muted" id="good-s" style="margin:6px 0 0">{{ t('all_good_sub') }}</p>
+          <h2 id="good-h">{{ t('all_good_title') }}</h2>
+          <p class="muted" id="good-s">{{ t('all_good_sub') }}</p>
         </div>
         {{ speak_btn('#good-h, #good-s', t, t('listen'), 'pill') }}
       </div>
@@ -104,76 +91,101 @@
     {% if result.not_assessed %}<div class="note"><b>{{ t('couldnt_check') }}:</b> {{ result.not_assessed|map(attribute='entry')|join(', ') }}. {{ t('couldnt_check_sub') }}</div>{% endif %}
     {% if result.allergies_unmatched %}<div class="note">{{ t('allergy_unmatched').replace('{x}', result.allergies_unmatched|join(', ')) }}</div>{% endif %}
     {% for s in result.symptoms_unlinked %}<div class="note">{{ t('symptom_unlinked').replace('{x}', s) }}</div>{% endfor %}
+    {% set dw = result.dose_unchecked|selectattr('reason', 'equalto', 'weight')|list %}
+    {% set da = result.dose_unchecked|selectattr('reason', 'equalto', 'amount')|list %}
+    {% if dw %}<div class="note"><b>{{ 'वज़न चाहिए' if hi else 'Weight needed' }}:</b>
+      {{ ('बच्चों के लिए %s की दैनिक सीमा वज़न से तय होती है, इसलिए इसे जाँचा नहीं गया।' if hi else 'For children, the daily limit for %s depends on weight, so it was not checked.')|format(dw|map(attribute='ingredient')|join(', ')) }}
+      <a href="/people">{{ 'वज़न जोड़ें' if hi else 'Add weight' }}</a></div>{% endif %}
+    {% if da %}<div class="note"><b>{{ 'दैनिक मात्रा नहीं जाँची गई' if hi else 'Daily amount not checked' }}:</b>
+      {{ ('%s के लिए रोज़ की मात्रा नहीं लिखी गई। नीचे हर दवा पर रोज़ की मात्रा लिखें।' if hi else 'No amount per day for %s. Add it on each medicine below to check the daily maximum.')|format(da|map(attribute='entries')|sum(start=[])|unique|join(', ')) }}</div>{% endif %}
   </div>
 
   <aside class="home-side">
-    <a class="tile-btn primary" href="/add">
-      <span class="ti-ico"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3 7.5h3.5L8.5 4.5h7l2 3H21V19H3z"/><circle cx="12" cy="13" r="3.8"/></svg></span>
-      <span class="ti-txt"><b>{{ t('nav_add') }}</b><small>{{ t('step_photo') }} → {{ t('step_check') }} → {{ t('step_done') }}</small></span>
-      <span class="chev" aria-hidden="true">›</span>
+    <a class="action primary" href="/add">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h3.5L8.5 4.5h7l2 3H21V19H3z"/><circle cx="12" cy="13" r="3.8"/></svg>
+      <span><b>{{ t('nav_add') }}</b><small>{{ 'फ़ोटो, QR या नाम से' if hi else 'From a photo, QR code or name' }}</small></span>
     </a>
-    <a class="tile-btn" href="/share">
-      <span class="ti-ico"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM17 17h4v4h-4"/></svg></span>
-      <span class="ti-txt"><b>{{ t('show_pharmacist') }}</b><small>{{ 'QR कोड और PDF सारांश' if lang == 'hi' else 'QR code and PDF summary' }}</small></span>
-      <span class="chev" aria-hidden="true">›</span>
+    <a class="action" href="/share">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM17 17h4v4h-4"/></svg>
+      <span><b>{{ t('show_pharmacist') }}</b><small>{{ 'QR कोड और PDF सारांश' if hi else 'QR code and PDF summary' }}</small></span>
     </a>
     <a class="panel health-panel" href="/health">
       <h3>{{ t('health_title') }}</h3>
       {% if patient.allergies is none and not symptom_labels %}
-      <p class="muted" style="margin:0">{{ 'अपनी एलर्जी और लक्षण बताएँ ताकि Medora हर दवा जाँच सके।' if lang == 'hi' else 'Tell us about allergies and symptoms so Medora can check every medicine.' }}</p>
+      <p class="muted">{{ 'अपनी एलर्जी और लक्षण बताएँ ताकि Medora हर दवा जाँच सके।' if hi else 'Add allergies and symptoms so Medora can check them against every medicine.' }}</p>
       {% endif %}
-      {% for a in allergy_labels %}<div class="tagrow"><span class="tag-k red">{{ 'एलर्जी' if lang == 'hi' else 'Allergy' }}</span><span>{{ a }}</span></div>{% endfor %}
-      {% if patient.allergies == [] %}<div class="tagrow"><span class="tag-k red">{{ 'एलर्जी' if lang == 'hi' else 'Allergy' }}</span><span>{{ t('no_allergies') }}</span></div>{% endif %}
-      {% for s in symptom_labels %}<div class="tagrow"><span class="tag-k blue">{{ 'लक्षण' if lang == 'hi' else 'Symptom' }}</span><span>{{ s }}</span></div>{% endfor %}
-      <span class="link-more">{{ t('update') }} ›</span>
+      <dl>
+        {% for a in allergy_labels %}<div><dt class="tag red">{{ 'एलर्जी' if hi else 'Allergy' }}</dt><dd>{{ a }}</dd></div>{% endfor %}
+        {% if patient.allergies == [] %}<div><dt class="tag red">{{ 'एलर्जी' if hi else 'Allergy' }}</dt><dd>{{ t('no_allergies') }}</dd></div>{% endif %}
+        {% for s in symptom_labels %}<div><dt class="tag blue">{{ 'लक्षण' if hi else 'Symptom' }}</dt><dd>{{ s }}</dd></div>{% endfor %}
+      </dl>
+      <span class="text-link">{{ t('update') }}</span>
     </a>
   </aside>
 </div>
 
 {% if entries %}
-<section class="section">
-  <h2 class="count-h">{{ t('my_meds') }} <span class="count">{{ entries|length }}</span></h2>
+<section class="section" aria-labelledby="meds-h">
+  <h2 class="count-h" id="meds-h">{{ t('my_meds') }} <span class="count">{{ entries|length }}</span></h2>
   <div class="med-grid">
     {% for e in entries %}
     {% set dup = tags[e.id]|selectattr('kind', 'equalto', 'dup')|list %}
     {% set bad = expiry.get(e.id) and expiry[e.id].expired %}
     <article class="medc {{ 'flag' if dup or bad }} {{ 'new' if added_entry and added_entry.id == e.id }}">
-      <div class="medc-ico">{{ med_icon(e, tags[e.id]|length) }}</div>
-      <div class="medc-body">
+      <div class="medc-top">
         <h3>{{ e.name }}</h3>
-        <div class="chips">
-          {% for tg in tags[e.id] %}
-          <span class="chip hue{{ tg.hue }} {{ tg.kind }}" title="{{ tg.label }} {{ tg.strength }}">{{ '⚠ ' if tg.kind == 'dup' }}{{ tg.label }}</span>
-          {% else %}<span class="chip unk">?</span>{% endfor %}
-        </div>
-        <div class="medc-meta">
-          {% if e.note %}<span>{{ e.note }}</span>{% endif %}
-          {% if expiry.get(e.id) %}<span class="{{ 'bad' if bad }}">{{ ('⚠ ' ~ t('expired')) if bad else t('expires') }} {{ expiry[e.id].label }}</span>{% endif %}
-        </div>
+        {% if e.form %}<span class="form">{{ e.form }}</span>{% endif %}
       </div>
-      <form method="post" action="/entries/{{ e.id }}/delete" onsubmit="return confirm('{{ t('remove') }} {{ e.name|e }}?')">
-        <button class="rm" type="submit" aria-label="{{ t('remove') }} {{ e.name }}">✕</button>
+      <ul class="comp">
+        {% for tg in tags[e.id] %}
+        <li>{% if tg.kind == 'dup' %}<mark title="{{ 'दूसरी दवा में भी' if hi else 'Also in another medicine' }}">{{ tg.label }}{% if tg.strength %} {{ tg.strength }}{% endif %}</mark>{% else %}{{ tg.label }}{% if tg.strength %} {{ tg.strength }}{% endif %}{% endif %}</li>
+        {% else %}<li class="unk">{{ 'संरचना नहीं दी गई' if hi else 'No composition entered' }}</li>{% endfor %}
+      </ul>
+      {% if dup %}<p class="dup-note">{{ 'यह घटक आपकी दूसरी दवा में भी है।' if hi else 'This ingredient is also in another of your medicines.' }}</p>{% endif %}
+      {% set liquid = 'ml' in (e.ingredients|map(attribute='strength')|join(' ')|lower) %}
+      <form class="amount" method="post" action="/entries/{{ e.id }}/amount">
+        <label for="amt-{{ e.id }}">{{ 'रोज़' if hi else 'Per day' }}</label>
+        <input id="amt-{{ e.id }}" type="number" name="per_day" min="0" max="500" step="0.5" inputmode="decimal" value="{{ '%g'|format(e.per_day) if e.per_day else '' }}" placeholder="–">
+        <span class="unit">{{ ('ml' if liquid else ('कैप्सूल' if 'capsule' in (e.form or '') else 'गोली')) if hi else ('ml' if liquid else ('capsules' if 'capsule' in (e.form or '') else 'tablets')) }}</span>
+        <button class="btn plain sm" type="submit">{{ 'सहेजें' if hi else 'Save' }}</button>
+      </form>
+      {% if e.note or expiry.get(e.id) %}
+      <div class="medc-meta">
+        {% if e.note %}<span>{{ e.note }}</span>{% endif %}
+        {% if expiry.get(e.id) %}<span class="{{ 'bad' if bad }}">{{ t('expired') if bad else t('expires') }} {{ expiry[e.id].label }}</span>{% endif %}
+      </div>
+      {% endif %}
+      <form class="del" method="post" action="/entries/{{ e.id }}/delete" onsubmit="return confirm('{{ t('remove') }} {{ e.name|e }}?')">
+        <button class="rm" type="submit" aria-label="{{ t('remove') }} {{ e.name }}" title="{{ t('remove') }}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
       </form>
     </article>
     {% endfor %}
   </div>
 </section>
 
-<section class="section panel uses-card">
+<section class="section panel uses" aria-labelledby="uses-h">
   <div class="panel-head">
     <div>
       <h2 id="uses-h">{{ t('used_for_title') }}</h2>
-      <p class="muted" style="margin:4px 0 0">{{ t('used_for_sub') }}</p>
+      <p class="muted">{{ t('used_for_sub') }}</p>
     </div>
     {{ speak_btn('#uses-h, .uses-say', t, t('listen'), 'pill') }}
   </div>
-  {% for e in entries %}{% for ing, use, url in uses[e.id] %}
-  <div class="uses-row">
-    <b>{{ ing }}</b>
-    <span class="uses-say"><span class="sr-only">{{ e.name }}, {{ ing }}: </span>{{ use or t('unknown_use') }} <span class="muted">· {{ e.name }}</span></span>
-    {% if url %}<a href="{{ url }}" target="_blank" rel="noopener">{{ t('label_link') }} ↗</a>{% endif %}
-  </div>
-  {% endfor %}{% endfor %}
+  <table class="plain uses-table">
+    <thead><tr><th scope="col">{{ t('ingredient') }}</th><th scope="col">{{ 'आम तौर पर इसके लिए' if hi else 'Commonly used for' }}</th><th scope="col">{{ 'दवा' if hi else 'Medicine' }}</th><th scope="col"><span class="sr-only">{{ t('label_link') }}</span></th></tr></thead>
+    <tbody>
+    {% for e in entries %}{% for ing, use, url in uses[e.id] %}
+    <tr>
+      <th scope="row">{{ ing }}</th>
+      <td class="uses-say"><span class="sr-only">{{ e.name }}, {{ ing }}: </span>{{ use or t('unknown_use') }}</td>
+      <td class="muted">{{ e.name }}</td>
+      <td>{% if url %}<a href="{{ url }}" target="_blank" rel="noopener">{{ t('label_link') }}</a>{% endif %}</td>
+    </tr>
+    {% endfor %}{% endfor %}
+    </tbody>
+  </table>
 </section>
 {% endif %}
 {% endblock %}

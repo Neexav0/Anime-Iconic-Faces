@@ -1,31 +1,31 @@
 {% extends "base.html" %}
+{% block title %}Pharmacist review | Medora{% endblock %}
 {% block content %}
 {% set items = review['items'] or {} %}
 <div class="stack">
   <div>
-    <span class="badge ok">Pharmacist review</span>
-    <h1 style="margin-top:8px">{{ patient.name or 'Patient' }}{% if patient.age %}, {{ patient.age }} yrs{% endif %}</h1>
+    <h1>{{ patient.name or 'Patient' }}{% if patient.age %}, {{ patient.age }} yrs{% endif %}</h1>
     <p class="lead">{{ entries|length }} medicines confirmed by the patient against their packs. Medora flagged {{ result.alerts|length }} point(s) using sourced rules. Please mark each one as discussed and add a note for the patient.</p>
   </div>
-  {% if result.urgent %}<div class="urgent" role="alert"><div><h2>⚠ Danger signs reported</h2><p>{{ result.urgent|join(', ') }}: please advise urgent medical care (112 / 108).</p></div></div>{% endif %}
-  <div class="card health-card" style="grid-template-columns:1fr 1fr">
+  {% if result.urgent %}<div class="urgent" role="alert"><div><h2>Danger signs reported</h2><p>{{ result.urgent|join(', ') }}: advise urgent medical care (112 or 108).</p></div></div>{% endif %}
+  <div class="card health-card two">
     <div><div class="lbl">Reported allergies</div><b>{% if patient.allergies is none %}not asked yet{% elif not allergy_labels %}none known{% else %}{{ allergy_labels|join(', ') }}{% endif %}</b></div>
     <div><div class="lbl">Reported symptoms</div><b>{{ symptom_labels|join(', ') or '—' }}</b></div>
   </div>
-  {% if saved %}<div class="ok-box" role="status">✓ Review saved. The patient now sees your notes on their Medora home screen.</div>{% endif %}
+  {% if saved %}<div class="ok-box" role="status">Review saved. The patient now sees your notes on their Medora home screen.</div>{% endif %}
 
   <form method="post" class="stack">
     {% for a in result.alerts %}
     {% set r = items.get(a.key, {}) %}
     <div class="review-item">
-      <h3 style="display:flex;gap:8px;flex-wrap:wrap;align-items:baseline">{{ a.title }} <span class="badge warn">{{ a.rule_id }}</span></h3>
-      <p style="margin:0">{{ a.message }}</p>
-      <details class="small" style="margin-top:8px"><summary>Evidence & sources</summary>
+      <h3>{{ a.title }} <span class="rid">{{ a.rule_id }}</span></h3>
+      <p>{{ a.message }}</p>
+      <details class="small"><summary>Evidence and sources</summary>
         <ul>{% for ev in a.evidence %}<li>{{ ev }}</li>{% endfor %}</ul>
-        <ul>{% for s in a.sources %}<li><b>{{ s.id }}</b>: {{ s.title }}{% if s.url and s.url.startswith('http') %} · <a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.publisher }}</a>{% endif %}</li>{% endfor %}</ul>
+        <ul>{% for s in a.sources %}<li><b>{{ s.id }}</b>: {{ s.title }}{% if s.url and s.url.startswith('http') %}, <a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.publisher }}</a>{% endif %}</li>{% endfor %}</ul>
       </details>
       <label class="check"><input type="checkbox" name="done::{{ a.key }}" {{ 'checked' if r.done }}> Discussed with the patient</label>
-      <label class="field" style="margin-top:10px"><span>Note for the patient</span>
+      <label class="field"><span>Note for the patient</span>
         <input type="text" name="note::{{ a.key }}" maxlength="300" value="{{ r.note or '' }}" placeholder="Your note, in your own words">
       </label>
     </div>
@@ -34,18 +34,18 @@
     {% endfor %}
 
     <div class="card stack">
-      <h3 style="margin:0">Medicines on the list</h3>
+      <h3>Medicines on the list</h3>
       {% for e in entries %}
-      <div class="small"><b>{{ e.name }}</b>: {% for tg in tags[e.id] %}{{ tg.label }} {{ tg.strength }}{{ ', ' if not loop.last }}{% endfor %}{% if expiry.get(e.id) %} · exp {{ expiry[e.id].label }}{% if expiry[e.id].expired %} (expired){% endif %}{% endif %}{% if e.note %} · {{ e.note }}{% endif %}</div>
+      <div class="small"><b>{{ e.name }}</b>: {% for tg in tags[e.id] %}{{ tg.label }} {{ tg.strength }}{{ ', ' if not loop.last }}{% endfor %}{% if expiry.get(e.id) %}; exp {{ expiry[e.id].label }}{% if expiry[e.id].expired %} (expired){% endif %}{% endif %}{% if e.note %}; {{ e.note }}{% endif %}</div>
       {% endfor %}
       {% if result.not_assessed %}<div class="small muted"><b>Not assessed:</b> {{ result.not_assessed|map(attribute='entry')|join(', ') }}</div>{% endif %}
     </div>
 
     <div class="card stack">
-      <label class="field"><span>Your name / pharmacy</span><input type="text" name="reviewer" maxlength="120" value="{{ review.reviewer }}" placeholder="e.g. A. Sharma, Apollo Pharmacy" required></label>
+      <label class="field"><span>Your name / pharmacy</span><input type="text" name="reviewer" maxlength="120" value="{{ review.reviewer }}" placeholder="For example, A. Sharma, City Pharmacy" required></label>
       <label class="field"><span>Overall note (optional)</span><textarea name="general_note" maxlength="500">{{ review.general_note }}</textarea></label>
-      <button class="btn big" type="submit">✓ Save review</button>
-      <p class="small muted" style="margin:0">Medora does not give clinical advice; your notes are shown to the patient as written.</p>
+      <button class="btn big" type="submit">Save review</button>
+      <p class="small muted">Medora does not give clinical advice; your notes are shown to the patient as written.</p>
     </div>
   </form>
 </div>

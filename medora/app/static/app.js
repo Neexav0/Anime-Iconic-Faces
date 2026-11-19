@@ -109,3 +109,41 @@
     });
   });
 })();
+
+/* Catalogue search on the Add medicine page: picking a brand starts "Type it in" pre-filled. */
+(() => {
+  const q = document.getElementById('q'), box = document.getElementById('q-results');
+  if (!q || !box) return;
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const hi = document.documentElement.lang === 'hi';
+  let timer, seq = 0;
+  const run = async () => {
+    const v = q.value.trim();
+    if (v.length < 2) { box.hidden = true; return; }
+    const mine = ++seq;
+    const res = await fetch('/api/brands?q=' + encodeURIComponent(v)).then(r => r.json()).catch(() => []);
+    if (mine !== seq) return;
+    box.innerHTML = res.length ? res.map(b => `<a href="/manual?q=${encodeURIComponent(b.name)}" role="option">
+        <b>${esc(b.name)}</b><small>${b.ingredients.map(i => esc(i.display + ' ' + i.strength)).join(' + ')}</small>
+        ${b.uses ? `<small>${esc(b.uses)}</small>` : ''}</a>`).join('')
+      : `<div class="empty">${hi ? 'कैटलॉग में नहीं मिला। आप संरचना खुद लिख सकते हैं।' : 'Not in the catalogue. You can enter the composition yourself.'}</div>`;
+    box.hidden = false;
+  };
+  q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 180); });
+  q.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { box.hidden = true; }
+    if (e.key === 'ArrowDown') { const a = box.querySelector('a'); if (a) { e.preventDefault(); a.focus(); } }
+  });
+  document.addEventListener('click', (e) => { if (!e.target.closest('.search')) box.hidden = true; });
+})();
+
+/* Show / hide password. */
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.pw-toggle');
+  if (!b) return;
+  const input = b.parentElement.querySelector('input');
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  b.textContent = show ? b.dataset.hide : b.dataset.show;
+  b.setAttribute('aria-pressed', show ? 'true' : 'false');
+});

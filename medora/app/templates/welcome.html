@@ -1,54 +1,203 @@
 {% extends "base.html" %}
-{% block bodyclass %}welcome{% endblock %}
-{% block width %}welcome-wrap{% endblock %}
+{% block title %}Medora: {{ 'दवा सुरक्षा पासपोर्ट' if lang == 'hi' else 'medication safety passport' }}{% endblock %}
+{% block bodyclass %}landing{% endblock %}
+{% block width %}wide{% endblock %}
 {% block content %}
-<section class="intro" id="intro">
-  {% with uid='w', size='xl' %}{% include "_namaste.html" %}{% endwith %}
-  <p class="intro-sub">{{ 'आपका दवा सुरक्षा पासपोर्ट' if lang == 'hi' else 'Your medication safety passport' }}</p>
+{% set hi = lang == 'hi' %}
+
+{# ---------------------------------------------------------------- hero #}
+<section class="hero" aria-labelledby="hero-h">
+  <div class="hero-copy">
+    <h1 id="hero-h">{{ 'अलग-अलग ब्रांड में एक ही दवा छुपी हो सकती है।' if hi else 'Different brands can hide the same medicine.' }}</h1>
+    <p class="hero-sub">{{ 'हर दवा की पट्टी की फ़ोटो लें। Medora उस पर छपी संरचना पढ़ता है, दो बार ली जा रही दवा पकड़ता है, और आपके फ़ार्मासिस्ट के लिए स्रोत सहित सारांश तैयार करता है।' if hi else 'Photograph each medicine strip. Medora reads the printed composition, finds ingredients you are taking twice, and prepares a sourced summary for your pharmacist.' }}</p>
+    <div class="cta-row">
+      {% if current and current.pid %}
+      <a class="btn big" href="/">{{ 'मेरा पासपोर्ट खोलें' if hi else 'Open my passport' }}</a>
+      <form method="post" action="/try/paracetamol"><button class="btn big ghost" type="submit">{{ 'सैंपल मरीज़ देखें' if hi else 'See a sample patient' }}</button></form>
+      {% else %}
+      <form method="post" action="/try/paracetamol"><button class="btn big" type="submit">{{ 'सैंपल मरीज़ के साथ आज़माएँ' if hi else 'Try a sample patient' }}</button></form>
+      <a class="btn big ghost" href="/signup">{{ 'अपना पासपोर्ट बनाएँ' if hi else 'Create my passport' }}</a>
+      {% endif %}
+    </div>
+    <p class="hero-fine">{{ 'कोई पासवर्ड नहीं। कोई निदान नहीं। हिंदी और अंग्रेज़ी में।' if hi else 'No password. No diagnosis. In English and Hindi.' }}</p>
+  </div>
+
+  <div class="compare" id="compare" aria-live="polite">
+    {% for pair in pairs %}
+    <figure class="pair" data-pair="{{ loop.index0 }}" {{ 'hidden' if not loop.first }}>
+      <div class="strips">
+        {% for b in pair.brands %}
+        <article class="strip">
+          <div class="blister" aria-hidden="true">{% for _ in range(8) %}<span></span>{% endfor %}</div>
+          <div class="print">
+            <h3>{{ b.name }}</h3>
+            <p class="maker">{{ b.maker }}</p>
+            <p class="contains">Each {{ b.form }} contains:</p>
+            <ul class="comp">
+              {% for i in b.ings %}<li>{% if i.shared %}<mark>{{ i.name }} {{ i.strength }}</mark>{% else %}{{ i.name }} {{ i.strength }}{% endif %}</li>{% endfor %}
+            </ul>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      <figcaption class="verdict">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.5"/></svg>
+        <span><b>{{ pair.shared|join(', ') }}</b> {{ 'दोनों पट्टियों में है।' if hi else 'is in both strips.' }}
+        {{ 'Medora आपसे इसे फ़ार्मासिस्ट से पूछने को कहता है।' if hi else 'Medora asks you to check this with your pharmacist.' }}</span>
+      </figcaption>
+    </figure>
+    {% endfor %}
+    {% if pairs|length > 1 %}
+    <button type="button" class="btn plain next-pair" id="next-pair">{{ 'दूसरी जोड़ी दिखाएँ' if hi else 'Show another pair' }}</button>
+    {% endif %}
+  </div>
 </section>
 
-<form class="signin card" method="post" action="/welcome" id="signin" autocomplete="off">
-  <div class="signin-head">
-    <span class="logo-mark big" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 32 32"><path d="M7 24V8l9 10 9-10v16" stroke="white" stroke-width="3.4" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg></span>
+{# ---------------------------------------------------------------- how #}
+<section class="band" id="how" aria-labelledby="how-h">
+  <h2 id="how-h">{{ 'तीन कदम, हर दवा के लिए' if hi else 'Three steps for every medicine' }}</h2>
+  <ol class="steps-row">
+    <li>
+      <span class="n" aria-hidden="true">1</span>
+      <h3>{{ 'पट्टी की फ़ोटो लें' if hi else 'Photograph the strip' }}</h3>
+      <p>{{ 'संरचना वाली तरफ़ की फ़ोटो लें, पट्टी का QR स्कैन करें, या नाम टाइप करें।' if hi else 'Take a photo of the side that lists the composition, scan the strip’s QR code, or type the name.' }}</p>
+    </li>
+    <li>
+      <span class="n" aria-hidden="true">2</span>
+      <h3>{{ 'हर जानकारी जाँचें' if hi else 'Check every detail' }}</h3>
+      <p>{{ 'Medora जो पढ़ता है, आप पैक से मिलाते हैं। आपकी पुष्टि से पहले कुछ भी सहेजा नहीं जाता।' if hi else 'You compare what Medora read with the pack. Nothing is saved until you confirm it.' }}</p>
+    </li>
+    <li>
+      <span class="n" aria-hidden="true">3</span>
+      <h3>{{ 'फ़ार्मासिस्ट को दिखाएँ' if hi else 'Show your pharmacist' }}</h3>
+      <p>{{ 'एक QR कोड और PDF सारांश। फ़ार्मासिस्ट की टिप्पणियाँ आपकी होम स्क्रीन पर लौट आती हैं।' if hi else 'A QR code and a PDF summary. Your pharmacist’s notes come back to your home screen.' }}</p>
+    </li>
+  </ol>
+</section>
+
+{# ---------------------------------------------------------------- checks #}
+<section class="band split" id="checks" aria-labelledby="checks-h">
+  <div class="split-head">
+    <h2 id="checks-h">{{ 'Medora क्या जाँचता है' if hi else 'What Medora checks' }}</h2>
+    <p>{{ 'हर चेतावनी एक लिखित नियम से आती है, जिसका स्रोत दिया गया है। जो Medora नहीं जाँच सकता, उसे “जाँचा नहीं गया” दिखाया जाता है, कभी “सुरक्षित” नहीं।' if hi else 'Every warning comes from a written rule with a cited source. Anything Medora cannot check is shown as “Not assessed”, never as safe.' }}</p>
+    <a class="text-link" href="/rules">{{ 'हर नियम और स्रोत पढ़ें' if hi else 'Read every rule and its source' }}</a>
+  </div>
+  <ul class="rule-list">
+    {% for r in kb.rules %}
+    {% set pubs = [] %}{% for sid in r.sources %}{% if kb.sources.get(sid) and kb.sources[sid].publisher not in pubs %}{% set _ = pubs.append(kb.sources[sid].publisher) %}{% endif %}{% endfor %}
+    <li>
+      <b>{{ r.title[lang] or r.title.en }}</b>
+      <span>{{ pubs|join(', ') if pubs else ('आपके बताए लक्षण, दवा के लेबल से' if hi else 'Your reported symptoms, matched to the label') }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{# ---------------------------------------------------------------- who #}
+<section class="band" aria-labelledby="who-h">
+  <h2 id="who-h">{{ 'दवा लेने वाले व्यक्ति के लिए बनाया गया' if hi else 'Made for the person taking the medicines' }}</h2>
+  <div class="who-row">
     <div>
-      <h1>{{ 'Medora में आपका स्वागत है' if lang == 'hi' else 'Welcome to Medora' }}</h1>
-      <p class="muted">{{ 'शुरू करने से पहले, हमें बताइए आपको क्या कहकर बुलाएँ।' if lang == 'hi' else 'Before we begin, tell us what to call you.' }}</p>
+      <h3>{{ 'कई दवाएँ लेने वाले बुज़ुर्ग' if hi else 'Older adults on several medicines' }}</h3>
+      <p>{{ 'बड़े अक्षर, पूरी हिंदी, पढ़कर सुनाने की सुविधा, और हर स्क्रीन पर एक साफ़ जवाब।' if hi else 'Large text, full Hindi, read aloud, and one clear answer on each screen.' }}</p>
+    </div>
+    <div>
+      <h3>{{ 'देखभाल करने वाले परिवार' if hi else 'Families who manage care' }}</h3>
+      <p>{{ 'हर डॉक्टर और हर केमिस्ट की दवाओं की एक ही सूची, जिसे WhatsApp पर भेजा जा सके।' if hi else 'One list of medicines from every doctor and every chemist, ready to send on WhatsApp.' }}</p>
+    </div>
+    <div>
+      <h3>{{ 'फ़ार्मासिस्ट' if hi else 'Pharmacists' }}</h3>
+      <p>{{ 'संरचना, नियम, सबूत और स्रोत के साथ एक सारांश, जिसे कुछ मिनटों में जाँचा जा सके।' if hi else 'A summary with composition, rule, evidence and source that takes minutes to review.' }}</p>
     </div>
   </div>
-  {% if request.query_params.get('error') == 'name' %}<div class="banner" role="alert">{{ 'कृपया अपना नाम लिखें।' if lang == 'hi' else 'Please type your name.' }}</div>{% endif %}
-  <label class="field"><span>{{ 'आपका नाम' if lang == 'hi' else 'Your name' }}</span>
-    <input type="text" name="name" required maxlength="120" value="{{ current.name if current else '' }}" placeholder="{{ 'जैसे कमला देवी' if lang == 'hi' else 'e.g. Kamla Devi' }}" id="name-in">
-  </label>
-  <label class="field"><span>{{ 'उम्र (वैकल्पिक)' if lang == 'hi' else 'Age (optional)' }}</span>
-    <input type="number" name="age" min="1" max="124" value="{{ current.age if current and current.age else '' }}" placeholder="72">
-  </label>
-  <fieldset class="lang-pick">
-    <legend>{{ 'भाषा' if lang == 'hi' else 'Language' }}</legend>
-    <label class="tile"><input type="radio" name="lang" value="en" {{ 'checked' if lang != 'hi' }}><span>English</span></label>
-    <label class="tile"><input type="radio" name="lang" value="hi" {{ 'checked' if lang == 'hi' }}><span>हिंदी</span></label>
-  </fieldset>
-  <button class="btn big" type="submit">{{ 'आगे बढ़ें' if lang == 'hi' else 'Continue' }} →</button>
-  <p class="small muted" style="margin:0">🔒 {{ 'आपकी जानकारी केवल इस डिवाइस के Medora में रहती है।' if lang == 'hi' else 'Your details stay in Medora on this device. No password needed.' }}</p>
-</form>
+</section>
+
+{# ---------------------------------------------------------------- evidence #}
+<section class="band split" id="evidence" aria-labelledby="ev-h">
+  <div class="split-head">
+    <h2 id="ev-h">{{ 'AI केवल पढ़ता है। नियम तय करते हैं।' if hi else 'The AI reads. Rules decide.' }}</h2>
+    <ul class="principles">
+      <li>{{ 'विज़न मॉडल केवल लेबल का पाठ उतारता है। उसके पास राय देने का कोई स्थान नहीं है।' if hi else 'The vision model only transcribes the label. Its output has no field for opinions.' }}</li>
+      <li>{{ 'नियम इंजन केवल आपकी पुष्टि की गई जानकारी पर चलता है।' if hi else 'The rule engine runs only on details you have confirmed.' }}</li>
+      <li>{{ 'फ़ोटो कभी डिस्क पर सहेजी नहीं जाती।' if hi else 'Photos are never written to disk.' }}</li>
+      <li>{{ 'Medora कभी दवा शुरू, बंद या बदलने को नहीं कहता।' if hi else 'Medora never tells you to start, stop or change a medicine.' }}</li>
+    </ul>
+  </div>
+  <div class="report" aria-label="{{ 'परीक्षण परिणाम' if hi else 'Test results' }}">
+    <div class="report-head">
+      <h3>{{ 'लाइव परीक्षण परिणाम' if hi else 'Live test results' }}</h3>
+      <span class="badge {{ 'ok' if ev.passed == ev.total else 'warn' }}">{{ ev.passed }}/{{ ev.total }} {{ 'पास' if hi else 'passing' }}</span>
+    </div>
+    <p class="muted small">{{ 'लवण, पर्यायवाची, टाइपो, अज्ञात दवाएँ और इंजेक्शन जैसे पाठ वाले लेबल किए गए परीक्षण मामले, उसी नियम इंजन से।' if hi else 'Labelled cases with salts, synonyms, typos, unknown medicines and injection-style text, run through the same rule engine the app uses.' }}</p>
+    <table class="plain">
+      <thead><tr><th scope="col">{{ 'नियम' if hi else 'Rule' }}</th><th scope="col">Precision</th><th scope="col">Recall</th></tr></thead>
+      <tbody>
+      {% set rtitle = {} %}{% for r in kb.rules %}{% set _ = rtitle.update({r.rule_id: r.title[lang] or r.title.en}) %}{% endfor %}
+      {% for rid, m in ev.per_rule.items() %}
+      <tr><td>{{ rtitle.get(rid, rid) }}</td>
+        <td class="num">{{ '%.0f%%'|format(m.precision*100) if m.precision is not none else '—' }}</td>
+        <td class="num">{{ '%.0f%%'|format(m.recall*100) if m.recall is not none else '—' }}</td></tr>
+      {% endfor %}
+      <tr><td>{{ 'अज्ञात दवाएँ “जाँचा नहीं गया” दिखीं' if hi else 'Unknown medicines shown as Not assessed' }}</td><td class="num" colspan="2">{{ ev.not_assessed.correct }} {{ 'में से' if hi else 'of' }} {{ ev.not_assessed.expected }}</td></tr>
+      </tbody>
+    </table>
+    <a class="text-link" href="/eval">{{ 'परीक्षण फिर से चलाएँ' if hi else 'Re-run the tests' }}</a>
+  </div>
+</section>
+
+{# ---------------------------------------------------------------- start #}
+<section class="band start" id="start" aria-labelledby="start-h">
+  <form class="card signin" method="post" action="/signup" novalidate>
+    <h2 id="start-h">{{ 'अपना पासपोर्ट बनाएँ' if hi else 'Create your passport' }}</h2>
+    <p class="muted">{{ 'एक खाते में आप अपने माता-पिता या बच्चों को भी जोड़ सकते हैं।' if hi else 'One account can also look after a parent or a child.' }}</p>
+    <label class="field"><span>{{ 'आपका नाम' if hi else 'Your name' }}</span>
+      <input type="text" name="name" required maxlength="120" autocomplete="name">
+    </label>
+    <label class="field"><span>{{ 'ईमेल या मोबाइल नंबर' if hi else 'Email or mobile number' }}</span>
+      <input type="text" name="login" required maxlength="160" autocomplete="username" inputmode="email">
+    </label>
+    <label class="field"><span>{{ 'पासवर्ड (कम से कम 8 अक्षर)' if hi else 'Password (at least 8 characters)' }}</span>
+      <span class="pw">
+        <input type="password" name="password" required minlength="8" maxlength="200" autocomplete="new-password">
+        <button type="button" class="pw-toggle" data-show="{{ 'दिखाएँ' if hi else 'Show' }}" data-hide="{{ 'छुपाएँ' if hi else 'Hide' }}">{{ 'दिखाएँ' if hi else 'Show' }}</button>
+      </span>
+    </label>
+    <input type="hidden" name="lang" value="{{ lang }}">
+    <button class="btn big" type="submit">{{ 'खाता बनाएँ' if hi else 'Create account' }}</button>
+    <p class="auth-switch">{{ 'पहले से खाता है?' if hi else 'Already have an account?' }} <a href="/login">{{ 'लॉग इन करें' if hi else 'Log in' }}</a></p>
+  </form>
+
+  <div class="samples">
+    <h2>{{ 'या एक सैंपल मरीज़ खोलें' if hi else 'Or open a sample patient' }}</h2>
+    <p class="muted">{{ 'हर एक में असली भारतीय ब्रांड और एक अलग जाँच है।' if hi else 'Each uses real Indian brands and shows a different check.' }}</p>
+    <ul class="sample-list">
+      {% for key, d in demos.items() %}
+      <li><form method="post" action="/try/{{ key }}">
+        <button type="submit">
+          <span class="s-name">{{ d.name }}, {{ d.age }}</span>
+          <span class="s-title">{{ d.title }}</span>
+          <span class="s-meds">{{ d.entries|map('first')|join(', ') }}</span>
+        </button>
+      </form></li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
 {% endblock %}
 {% block scripts %}
 <script>
-// Play the intro once per session; afterwards show the form straight away.
 (() => {
-  const intro = document.getElementById('intro'), form = document.getElementById('signin');
-  let seen = false; try { seen = sessionStorage.getItem('medora-intro') === '1'; } catch (e) {}
-  const reveal = () => {
-    document.body.classList.add('intro-done');
-    setTimeout(() => { const n = document.getElementById('name-in'); if (n && !n.value) n.focus({ preventScroll: true }); }, 900);
+  const pairs = [...document.querySelectorAll('#compare .pair')], next = document.getElementById('next-pair');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let i = 0;
+  const show = (n) => {
+    pairs.forEach((p, k) => { p.hidden = k !== n; p.classList.remove('marked'); });
+    if (reduce) { pairs[n].classList.add('marked'); return; }
+    void pairs[n].offsetWidth;
+    setTimeout(() => pairs[n].classList.add('marked'), 30);
   };
-  scrollTo(0, 0);
-  if (seen || matchMedia('(prefers-reduced-motion: reduce)').matches) { intro.classList.add('static'); reveal(); return; }
-  document.fonts.ready.then(() => {
-    intro.classList.add('play');
-    setTimeout(reveal, 3300);
-    try { sessionStorage.setItem('medora-intro', '1'); } catch (e) {}
-  });
-  intro.addEventListener('click', reveal);
+  if (pairs.length) setTimeout(() => show(0), reduce ? 0 : 500);
+  if (next) next.addEventListener('click', () => { i = (i + 1) % pairs.length; show(i); });
 })();
 </script>
 {% endblock %}

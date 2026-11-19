@@ -1,22 +1,25 @@
 {% extends "base.html" %}
 {% block width %}{% endblock %}
+{% block title %}{{ t('mode_pharmacist') }} | Medora{% endblock %}
 {% block content %}
 {% set notes = review['items'] if review else {} %}
 <div class="stack">
   <div>
-    <h1>{{ t('mode_pharmacist') }} · {{ patient.name or '—' }}{% if patient.age %}, {{ patient.age }}{% endif %}</h1>
+    <h1>{{ patient.name or 'Patient' }}{% if patient.age %}, {{ patient.age }}{% endif %}</h1>
     <p class="lead">Full detail: every flag with its rule, evidence and cited source, the ingredient-level view, and everything Medora could not assess.</p>
   </div>
 
-  <form class="card" method="post" action="/patient" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+  <form class="card patient-bar" method="post" action="/patient">
     <input type="hidden" name="back" value="/pharmacist">
-    <label class="field" style="width:240px"><span>{{ t('patient') }} · {{ t('name') }}</span><input type="text" name="name" value="{{ patient.name }}" autocomplete="off"></label>
-    <label class="field" style="width:120px"><span>{{ t('age') }}</span><input type="number" name="age" min="1" max="124" value="{{ patient.age or '' }}"></label>
+    <label class="field w-name"><span>{{ t('name') }}</span><input type="text" name="name" value="{{ patient.name }}" autocomplete="off"></label>
+    <label class="field w-age"><span>{{ t('age') }}</span><input type="number" name="age" min="0" max="124" value="{{ patient.age if patient.age is not none else '' }}"></label>
+    <label class="field w-age"><span>Weight (kg)</span><input type="number" name="weight" min="1" max="300" step="0.1" value="{{ patient.weight_kg or '' }}"></label>
     <button class="btn ghost" type="submit">{{ t('save') }}</button>
-    {% if patient.age and patient.age >= 65 %}<span class="badge warn">65+ · Beers check on</span>{% endif %}
-    <span style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap">
-      <a class="btn warm" href="/share">QR handoff</a>
-      <a class="btn" href="/passport.pdf">⬇ PDF</a>
+    {% if patient.age and patient.age >= 65 %}<span class="badge warn">65+: Beers check on</span>{% endif %}
+    {% if result.is_child %}<span class="badge child">Under 12: child dose limits on</span>{% endif %}
+    <span class="bar-end">
+      <a class="btn ghost" href="/share">QR handoff</a>
+      <a class="btn" href="/passport.pdf">Download PDF</a>
     </span>
   </form>
 
@@ -25,7 +28,7 @@
     <div class="stat {{ 'warn' if result.alerts }}"><b>{{ result.alerts|length }}</b><span>{{ t('alerts') }}</span></div>
     <div class="stat grey"><b>{{ result.not_assessed|length }}</b><span>{{ t('not_assessed') }}</span></div>
   </div>
-  {% if result.urgent %}<div class="urgent" role="alert"><div><h2>⚠ Danger signs reported</h2><p>{{ result.urgent|join(', ') }}: advise urgent medical care (112 / 108).</p></div></div>{% endif %}
+  {% if result.urgent %}<div class="urgent" role="alert"><div><h2>Danger signs reported</h2><p>{{ result.urgent|join(', ') }}: advise urgent medical care (112 or 108).</p></div></div>{% endif %}
   <div class="card health-card">
     <div><div class="lbl">Reported allergies</div><b>{% if patient.allergies is none %}<span class="muted">not asked yet</span>{% elif not allergy_labels %}none known{% else %}{{ allergy_labels|join(', ') }}{% endif %}</b>
       {% if result.allergies_unmatched %}<div class="small muted">Not matched (not checked): {{ result.allergies_unmatched|join(', ') }}</div>{% endif %}</div>
@@ -33,7 +36,7 @@
       {% if result.symptoms_unlinked %}<div class="small muted">Not label-linked to current medicines: {{ result.symptoms_unlinked|join(', ') }}</div>{% endif %}</div>
     <a class="btn ghost" href="/health">Edit</a>
   </div>
-  {% if review %}<div class="ok-box">✓ Reviewed{% if review.reviewer %} by <b>{{ review.reviewer }}</b>{% endif %} at {{ review.reviewed_at.strftime('%d %b %Y, %H:%M') }}{% if review.general_note %}: “{{ review.general_note }}”{% endif %}</div>{% endif %}
+  {% if review %}<div class="ok-box">Reviewed{% if review.reviewer %} by <b>{{ review.reviewer }}</b>{% endif %} at {{ review.reviewed_at.strftime('%d %b %Y, %H:%M') }}{% if review.general_note %}: “{{ review.general_note }}”{% endif %}</div>{% endif %}
 
   <section class="section stack">
     <h2>{{ t('alerts') }}</h2>
@@ -42,11 +45,11 @@
       <h3>{{ a.title }} <span class="rid">{{ a.rule_id }}</span>
         {% set r = notes.get(a.key) %}{% if r and r.done %}<span class="badge ok">reviewed</span>{% endif %}</h3>
       <p>{{ a.message }}</p>
-      {% if r and r.note %}<p class="small" style="margin-top:8px"><b>{{ t('pharmacist_note') }}:</b> {{ r.note }}</p>{% endif %}
+      {% if r and r.note %}<p class="small"><b>{{ t('pharmacist_note') }}:</b> {{ r.note }}</p>{% endif %}
       <details>
-        <summary>{{ t('why') }} · {{ t('sources') }}</summary>
+        <summary>{{ t('why') }} and {{ t('sources')|lower }}</summary>
         <ul>{% for ev in a.evidence %}<li>{{ ev }}</li>{% endfor %}</ul>
-        <ul>{% for s in a.sources %}<li><b>{{ s.id }}</b>: {{ s.title }}{% if s.url %} · <a href="{{ s.url }}" {% if s.url.startswith('http') %}target="_blank" rel="noopener"{% endif %}>{{ s.publisher }}</a>{% endif %}</li>{% endfor %}</ul>
+        <ul>{% for s in a.sources %}<li><b>{{ s.id }}</b>: {{ s.title }}{% if s.url %}, <a href="{{ s.url }}" {% if s.url.startswith('http') %}target="_blank" rel="noopener"{% endif %}>{{ s.publisher }}</a>{% endif %}</li>{% endfor %}</ul>
       </details>
     </article>
     {% else %}
@@ -63,7 +66,7 @@
   </section>
   {% endif %}
 
-  <div class="grid2 section" style="align-items:start">
+  <div class="grid2 section top">
     <section>
       <h2>{{ t('medicines') }}</h2>
       {% for e in entries %}
@@ -71,9 +74,10 @@
         <div class="pill-ico" aria-hidden="true">{{ loop.index }}</div>
         <div>
           <h3>{{ e.name }}</h3>
-          <div class="meta">{{ t('origin_' + e.origin) if e.origin in ['photo', 'manual'] else 'from strip QR' }} ·
-            {% if e.brand_id %}<span class="badge ok">catalogue</span>{% else %}<span class="badge">not in catalogue</span>{% endif %}
-            {% if e.note %} · {{ e.note }}{% endif %}{% if e.batch %} · batch {{ e.batch }}{% endif %}</div>
+          <div class="meta">{{ (t('origin_' + e.origin) if e.origin in ['photo', 'manual'] else 'from strip QR')|capitalize }}
+            {% if e.brand_id %}<span class="badge ok">Catalogue</span>{% else %}<span class="badge">Not in catalogue</span>{% endif %}
+            {% if e.note %}<span>{{ e.note }}</span>{% endif %}{% if e.batch %}<span>Batch {{ e.batch }}</span>{% endif %}
+            <span>{% if e.per_day %}{{ '%g'|format(e.per_day) }} a day{% else %}Amount per day not given{% endif %}</span></div>
           <div class="contains">
             {% for tg in tags[e.id] %}<span class="ing {{ tg.kind }}">{{ tg.label }}{% if tg.strength %} <small>{{ tg.strength }}</small>{% endif %}</span>{% else %}<span class="ing unk">no composition</span>{% endfor %}
           </div>
@@ -85,12 +89,12 @@
     </section>
     <section class="stack">
       <h2>{{ t('ingredient_view') }}</h2>
-      <div class="card table-scroll" style="padding:6px 8px">
+      <div class="card table-scroll flush">
         <table class="plain">
           <thead><tr><th>{{ t('ingredient') }}</th><th>{{ t('in_medicines') }}</th><th></th></tr></thead>
           <tbody>
           {% for iv in result.ingredient_view %}
-            <tr><td><b>{{ iv.ingredient }}</b></td><td>{{ iv.entries|join(' · ') }}</td>
+            <tr><td><b>{{ iv.ingredient }}</b></td><td>{{ iv.entries|join(', ') }}</td>
               <td>{% if iv.count > 1 %}<span class="badge warn">×{{ iv.count }}</span>{% endif %}{% if not iv.recognised %}<span class="badge">{{ t('unrecognised') }}</span>{% endif %}</td></tr>
           {% endfor %}
           </tbody>

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ 'लोग' if lang == 'hi' else 'People' }} | Medora{% endblock %}
+{% block content %}
+{% set hi = lang == 'hi' %}
+<h1>{{ 'आप किसकी दवाएँ देख रहे हैं?' if hi else 'Whose medicines are you looking at?' }}</h1>
+<p class="lead">{{ 'हर व्यक्ति की अपनी सूची, एलर्जी और जाँच होती है। 12 साल से छोटे बच्चों के लिए वज़न से दैनिक मात्रा जाँची जाती है।' if hi else 'Each person has their own list, allergies and checks. For children under 12, daily amounts are checked against their weight.' }}</p>
+{% if error == 'name' %}<div class="banner" role="alert">{{ 'नाम लिखें, फिर जोड़ें।' if hi else 'Type a name, then add the person.' }}</div>{% endif %}
+{% if error == 'last' %}<div class="banner" role="alert">{{ 'खाते में कम से कम एक व्यक्ति होना ज़रूरी है।' if hi else 'An account needs at least one person, so this one cannot be removed.' }}</div>{% endif %}
+
+<ul class="people">
+  {% for p in people %}
+  {% set child = p.age is not none and p.age < child_below %}
+  {% set current = me.pid == p.id %}
+  <li class="person {{ 'current' if current }}">
+    <div class="person-main">
+      <div>
+        <h2>{{ p.name }}</h2>
+        <p class="muted">
+          {% if p.age is not none %}{{ p.age }} {{ t('years') }}{% else %}{{ 'उम्र नहीं दी' if hi else 'Age not given' }}{% endif %}{% if p.weight_kg %}, {{ p.weight_kg|round(1)|string|replace('.0', '') }} kg{% endif %},
+          {{ counts[p.id] }} {{ t('medicine_count') }}
+        </p>
+        {% if child %}<span class="badge child">{{ 'बच्चा: बच्चों की खुराक सीमा लागू' if hi else 'Child: child dose limits apply' }}</span>{% endif %}
+        {% if child and not p.weight_kg %}<p class="warn-line">{{ 'बच्चों की दैनिक मात्रा जाँचने के लिए वज़न जोड़ें।' if hi else 'Add a weight to check daily amounts for this child.' }}</p>{% endif %}
+      </div>
+      {% if current %}
+      <span class="badge ok">{{ 'अभी देख रहे हैं' if hi else 'Viewing now' }}</span>
+      {% else %}
+      <form method="post" action="/people/{{ p.id }}/switch"><button class="btn ghost sm" type="submit">{{ 'इनकी सूची खोलें' if hi else 'Open their list' }}</button></form>
+      {% endif %}
+    </div>
+    <details class="person-edit" {{ 'open' if child and not p.weight_kg }}>
+      <summary>{{ 'उम्र और वज़न बदलें' if hi else 'Edit age and weight' }}</summary>
+      <form method="post" action="/people/{{ p.id }}/update" class="inline-form">
+        <label class="field"><span>{{ 'नाम' if hi else 'Name' }}</span><input type="text" name="name" maxlength="120" value="{{ p.name }}"></label>
+        <label class="field w-short"><span>{{ 'उम्र' if hi else 'Age' }}</span><input type="number" name="age" min="0" max="124" inputmode="numeric" value="{{ p.age if p.age is not none else '' }}"></label>
+        <label class="field w-short"><span>{{ 'वज़न (kg)' if hi else 'Weight (kg)' }}</span><input type="number" name="weight" min="1" max="300" step="0.1" inputmode="decimal" value="{{ p.weight_kg or '' }}"></label>
+        <button class="btn" type="submit">{{ 'सहेजें' if hi else 'Save' }}</button>
+      </form>
+      {% if people|length > 1 %}
+      <form method="post" action="/people/{{ p.id }}/delete" onsubmit="return confirm('{{ ('%s और उनकी सभी दवाएँ हटाएँ? यह वापस नहीं होगा।' if hi else 'Remove %s and all their medicines? This cannot be undone.')|format(p.name|e) }}')">
+        <button class="btn plain danger-text" type="submit">{{ 'इस व्यक्ति को हटाएँ' if hi else 'Remove this person' }}</button>
+      </form>
+      {% endif %}
+    </details>
+  </li>
+  {% endfor %}
+</ul>
+
+<section class="card add-person" aria-labelledby="add-h">
+  <h2 id="add-h">{{ 'किसी और को जोड़ें' if hi else 'Add someone you look after' }}</h2>
+  <form method="post" action="/people" class="inline-form">
+    <label class="field"><span>{{ 'नाम' if hi else 'Name' }}</span><input type="text" name="name" required maxlength="120"></label>
+    <label class="field w-short"><span>{{ 'उम्र' if hi else 'Age' }}</span><input type="number" name="age" min="0" max="124" inputmode="numeric"></label>
+    <label class="field w-short"><span>{{ 'वज़न (kg)' if hi else 'Weight (kg)' }}</span><input type="number" name="weight" min="1" max="300" step="0.1" inputmode="decimal"></label>
+    <button class="btn" type="submit">{{ 'जोड़ें' if hi else 'Add person' }}</button>
+  </form>
+  <p class="help">{{ '12 साल से छोटे बच्चों के लिए वज़न ज़रूरी है ताकि Medora उनकी दैनिक मात्रा जाँच सके।' if hi else 'For a child under 12, add their weight so Medora can check daily amounts.' }}</p>
+</section>
+
+<section class="account-row" aria-label="{{ 'खाता' if hi else 'Account' }}">
+  <p class="muted">{% if me.is_demo %}{{ 'सैंपल खाता' if hi else 'Sample account' }}{% else %}{{ 'लॉग इन' if hi else 'Signed in as' }} <b>{{ me.login }}</b>{% endif %}</p>
+  <div class="row-actions">
+    {% if not me.is_demo %}
+    <form method="post" action="/people/recovery-code" onsubmit="return confirm('{{ 'नया रिकवरी कोड बनाएँ? पुराना काम करना बंद कर देगा।' if hi else 'Make a new recovery code? The old one will stop working.' }}')">
+      <button class="btn ghost sm" type="submit">{{ 'नया रिकवरी कोड' if hi else 'New recovery code' }}</button></form>
+    {% endif %}
+    <form method="post" action="/logout"><button class="btn ghost sm" type="submit">{{ 'साइन आउट' if hi else 'Sign out' }}</button></form>
+  </div>
+</section>
+{% endblock %}

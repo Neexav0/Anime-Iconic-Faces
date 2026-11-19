@@ -7,7 +7,10 @@ an explicit list of what was NOT assessed.
 Entry dict shape:
   {"id": 1, "name": "Dolo 650", "brand_id": 3 | None,
    "ingredients":         [{"raw": "Paracetamol IP", "strength": "650 mg"}, ...],   # user-confirmed
-   "printed_ingredients": [{"raw": ..., "strength": ...}] | None}                   # vision transcription, if any
+   "printed_ingredients": [{"raw": ..., "strength": ...}] | None,                  # vision transcription, if any
+   "per_day": 3 | None}       # units (tablets/capsules) or ml taken per day, as entered by the user
+
+Patient dict: {"age": 72 | None, "weight_kg": 18.5 | None, "allergies": [...], "symptoms": [...]}
 """
 from __future__ import annotations
 
@@ -16,7 +19,7 @@ from collections import defaultdict
 from datetime import date
 
 from .kb import KB
-from .matching import clean, parse_expiry, parse_mg
+from .matching import clean, parse_dose_strength, parse_expiry, parse_mg
 
 
 def _resolve(entry: dict, kb: KB) -> list[dict]:
@@ -64,7 +67,7 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today
     names = {e["id"]: e["name"] for e in entries}
     alerts: list[dict] = []
 
-    def make_alert(rule, entry_ids, evidence, extra_sources=(), **fmt):
+    def make_alert(rule, entry_ids, evidence, extra_sources=(), only_sources=None, **fmt):
         simple = rule.get("simple") or rule["message"]
         # Evidence lines are language-neutral, so the key is stable across languages and reloads.
         disc = hashlib.sha1("\n".join(evidence).encode()).hexdigest()[:8]
@@ -78,7 +81,8 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today
             "entry_ids": sorted(set(entry_ids)),
             "entries": [names[i] for i in sorted(set(entry_ids))],
             "evidence": evidence,
-            "sources": [kb.sources[s] for s in rule["sources"] if s in kb.sources] + list(extra_sources),
+            "sources": [kb.sources[s] for s in (rule["sources"] if only_sources is None else only_sources)
+                        if s in kb.sources] + list(extra_sources),
         })
 
     # Index: ingredient key -> list of (entry_id, ingredient)
@@ -86,6 +90,29 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today
     for eid, ings in resolved.items():
         for ing in ings:
             by_key[ing["key"]].append((eid, ing))
+
+    # Daily totals per ingredient that has a label limit: sum over medicines of (amount per unit x units per day).
+    limits = (kb.dose_limits or {}).get("limits", {})
+    child_below = (kb.dose_limits or {}).get("child_below_age", 12)
+    age, weight = patient.get("age"), patient.get("weight_kg")
+    is_child = age is not None and age < child_below
+    dose: dict[str, dict] = {}
+    for e in entries:
+        per_day = e.get("per_day")
+        for ing in resolved[e["id"]]:
+            c = ing["canonical"]
+            if c not in limits:
+                continue
+            rec = dose.setdefault(c, {"mg": 0.0, "parts": [], "missing": []})
+            ds = parse_dose_strength(ing["strength"])
+            if not per_day or ds is None:
+                rec["missing"].append(e["id"])
+                continue
+            mg_day = ds[0] * per_day
+            rec["mg"] += mg_day
+            unit = "ml" if ds[1] == "ml" else "units"
+            rec["parts"].append((e["id"], f"{names[e['id']]}: {_num(per_day)} {unit} a day x {_num(ds[0])} mg = {_num(mg_day)} mg"))
+    dose_unchecked: list[dict] = []
 
     for rule in kb.rules:
         t, p = rule["type"], rule.get("params", {})
@@ -181,6 +208,60 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today
                            symptom=kb.symptom_label(code, lang),
                            items=_join([f"{kb.display(i['canonical'])} ({names[eid]})" for eid, i in uniq], lang))
 
+        elif t == "daily_dose_limit":
+            if (p.get("group") == "child") != is_child:
+                continue
+            for c, rec in sorted(dose.items()):
+                lim = limits[c]
+                if is_child and age < lim.get("child_min_age", 0):
+                    continue  # the label gives no dose at this age at all: R-DOSE-AGE covers it
+                if is_child and "child_mg_per_kg_day" in lim:
+                    if not weight:
+                        involved = {i for i, _ in rec["parts"]} | set(rec["missing"])
+                        dose_unchecked.append({"ingredient": kb.display(c), "reason": "weight",
+                                               "entries": [names[i] for i in sorted(involved)]})
+                        continue
+                    limit = min(lim["child_mg_per_kg_day"] * weight, lim.get("child_cap_mg_day", float("inf")))
+                    basis = f"{_num(weight)} किलो के बच्चे" if lang == "hi" else f"a child weighing {_num(weight)} kg"
+                    rule_line = f"Child limit: {lim['child_mg_per_kg_day']} mg/kg/day x {_num(weight)} kg = {_num(limit)} mg/day"
+                elif is_child:
+                    limit = lim["child_mg_day"]
+                    lo, hi_age = lim["child_min_age"], child_below - 1
+                    basis = f"{lo} से {hi_age} साल के बच्चे" if lang == "hi" else f"a child aged {lo} to {hi_age}"
+                    rule_line = f"Child limit (age {lo}-{hi_age}): {_num(limit)} mg/day"
+                else:
+                    limit = lim["adult_mg_day"]
+                    basis = ""
+                    if lim.get("adult_basis") == "otc":
+                        basis = (" (बिना पर्चे वाली दवा का लेबल; डॉक्टर ने अलग मात्रा दी हो सकती है)" if lang == "hi"
+                                 else " (over-the-counter label; your doctor may have prescribed a different amount)")
+                    rule_line = f"Adult limit: {_num(limit)} mg/day"
+                if rec["mg"] > limit:
+                    ids = [i for i, _ in rec["parts"]]
+                    make_alert(rule, ids, [line for _, line in rec["parts"]] + [f"Total: {_num(rec['mg'])} mg/day", rule_line],
+                               only_sources=lim.get("sources", []), ingredient=kb.display(c), total=_num(rec["mg"]),
+                               limit=_num(limit), basis=basis, entries=_join([names[i] for i in ids], lang))
+                    alerts[-1]["ingredient_key"] = c
+                elif rec["missing"]:
+                    dose_unchecked.append({"ingredient": kb.display(c), "reason": "amount",
+                                           "entries": [names[i] for i in rec["missing"]]})
+
+        elif t == "child_min_age":
+            if not is_child:
+                continue
+            for eid, ings in resolved.items():
+                # One alert per medicine, naming every ingredient the label does not cover at this age.
+                hits = [(ing, limits[ing["canonical"]]) for ing in ings
+                        if ing["canonical"] in limits and age < limits[ing["canonical"]].get("child_min_age", 0)]
+                if not hits:
+                    continue
+                min_age = max(lim["child_min_age"] for _, lim in hits)
+                srcs = list(dict.fromkeys(sid for _, lim in hits for sid in lim.get("sources", [])))
+                make_alert(rule, [eid], [f"{names[eid]}: {kb.display(i['canonical'])} {i['strength']}".strip() for i, _ in hits]
+                           + [f"Child's age: {age}; label gives doses from age {min_age}"],
+                           only_sources=srcs, entry=names[eid], min_age=min_age, age=age,
+                           ingredient=_join([kb.display(i["canonical"]) for i, _ in hits], lang))
+
         elif t == "expired":
             for e in entries:
                 exp = parse_expiry(e.get("expiry"))
@@ -245,7 +326,13 @@ def evaluate(entries: list[dict], patient: dict, kb: KB, lang: str = "en", today
 
     return {"alerts": alerts, "not_assessed": not_assessed, "ingredient_view": ingredient_view,
             "urgent": urgent, "symptoms_unlinked": symptoms_unlinked, "allergies_unmatched": allergies_unmatched,
+            "dose_unchecked": dose_unchecked, "is_child": is_child,
             "rules_checked": [r["rule_id"] for r in kb.rules]}
+
+
+def _num(x: float) -> str:
+    """1950.0 -> '1950', 2.5 -> '2.5'."""
+    return str(int(x)) if float(x).is_integer() else f"{x:.1f}".rstrip("0").rstrip(".")
 
 
 def resolve_allergy(raw: str, kb: KB) -> tuple[set[str], dict | None]:

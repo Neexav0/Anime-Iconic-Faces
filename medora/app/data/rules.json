@@ -215,5 +215,92 @@
       "en": "My {entry} pack has expired. What should I do?",
       "hi": "मेरे {entry} पैक की तारीख निकल गई है। मुझे क्या करना चाहिए?"
     }
+  },
+  {
+    "rule_id": "R-DOSE-ADULT",
+    "type": "daily_dose_limit",
+    "params": {
+      "group": "adult"
+    },
+    "sources": [
+      "DM-APAP-OTC",
+      "DM-NSAID-OTC",
+      "DM-CPM-OTC",
+      "DM-PE-OTC"
+    ],
+    "scope": "Patient is 12 or older (or age unknown). The amount per day the user entered for each medicine, multiplied by the confirmed strength and added up across all medicines, is above the adult label maximum for that ingredient.",
+    "title": {
+      "en": "Above the adult daily maximum",
+      "hi": "वयस्कों की दैनिक अधिकतम मात्रा से ज़्यादा"
+    },
+    "message": {
+      "en": "As entered, {entries} together give {total} mg of {ingredient} a day. The adult label maximum is {limit} mg a day{basis}. Review with a pharmacist before the next dose.",
+      "hi": "जैसा आपने लिखा, {entries} मिलकर रोज़ {ingredient} की {total} mg मात्रा देते हैं। वयस्कों के लिए लेबल पर अधिकतम {limit} mg प्रतिदिन है{basis}। अगली खुराक से पहले फ़ार्मासिस्ट से जाँच करवाएँ।"
+    },
+    "simple": {
+      "en": "Together, {entries} give {total} mg of {ingredient} a day. The label maximum for adults is {limit} mg. Ask your pharmacist before your next dose.",
+      "hi": "{entries} मिलकर रोज़ {ingredient} की {total} mg मात्रा देते हैं। वयस्कों के लिए लेबल पर अधिकतम {limit} mg है। अगली खुराक से पहले फ़ार्मासिस्ट से पूछें।"
+    },
+    "question": {
+      "en": "Am I taking more {ingredient} each day than the label allows?",
+      "hi": "क्या मैं रोज़ लेबल से ज़्यादा {ingredient} ले रहा/रही हूँ?"
+    }
+  },
+  {
+    "rule_id": "R-DOSE-CHILD",
+    "type": "daily_dose_limit",
+    "params": {
+      "group": "child"
+    },
+    "sources": [
+      "WHO-MFC-2010",
+      "DM-APAP-OTC",
+      "DM-NSAID-OTC",
+      "DM-CPM-OTC",
+      "DM-PE-OTC"
+    ],
+    "scope": "Patient is under 12. Weight-based limits (mg per kg per day) need the child's weight; fixed limits apply to ages 6 to 11. The entered daily total across all medicines is above the child limit.",
+    "title": {
+      "en": "Above the daily maximum for a child",
+      "hi": "बच्चे की दैनिक अधिकतम मात्रा से ज़्यादा"
+    },
+    "message": {
+      "en": "As entered, {entries} together give {total} mg of {ingredient} a day. For {basis}, the maximum is {limit} mg a day. Check with a doctor or pharmacist before the next dose.",
+      "hi": "जैसा आपने लिखा, {entries} मिलकर रोज़ {ingredient} की {total} mg मात्रा देते हैं। {basis} के लिए अधिकतम {limit} mg प्रतिदिन है। अगली खुराक से पहले डॉक्टर या फ़ार्मासिस्ट से जाँच करवाएँ।"
+    },
+    "simple": {
+      "en": "Together, {entries} give {total} mg of {ingredient} a day. For {basis}, the maximum is {limit} mg. Check with a doctor before the next dose.",
+      "hi": "{entries} मिलकर रोज़ {ingredient} की {total} mg मात्रा देते हैं। {basis} के लिए अधिकतम {limit} mg है। अगली खुराक से पहले डॉक्टर से पूछें।"
+    },
+    "question": {
+      "en": "Is this much {ingredient} each day too much for my child?",
+      "hi": "क्या रोज़ इतनी {ingredient} मेरे बच्चे के लिए ज़्यादा है?"
+    }
+  },
+  {
+    "rule_id": "R-DOSE-AGE",
+    "type": "child_min_age",
+    "params": {},
+    "sources": [
+      "DM-CPM-OTC",
+      "DM-PE-OTC"
+    ],
+    "scope": "Patient is younger than the youngest age the over-the-counter label gives a dose for.",
+    "title": {
+      "en": "No label dose for this age",
+      "hi": "इस उम्र के लिए लेबल पर खुराक नहीं"
+    },
+    "message": {
+      "en": "{entry} contains {ingredient}. Its label gives no dose for children under {min_age}, and this child is {age}. Ask a doctor or pharmacist before giving it.",
+      "hi": "{entry} में {ingredient} है। इसके लेबल पर {min_age} साल से छोटे बच्चों के लिए कोई खुराक नहीं है, और यह बच्चा {age} साल का है। देने से पहले डॉक्टर या फ़ार्मासिस्ट से पूछें।"
+    },
+    "simple": {
+      "en": "{entry} contains {ingredient}, and its label gives no dose for children under {min_age}. Ask a doctor before giving it.",
+      "hi": "{entry} में {ingredient} है, और इसके लेबल पर {min_age} साल से छोटे बच्चों के लिए खुराक नहीं है। देने से पहले डॉक्टर से पूछें।"
+    },
+    "question": {
+      "en": "Is {entry} meant for a child this young?",
+      "hi": "क्या {entry} इतने छोटे बच्चे के लिए है?"
+    }
   }
 ]

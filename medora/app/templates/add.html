@@ -1,43 +1,50 @@
 {% extends "base.html" %}
+{% block title %}{{ t('nav_add') }} | Medora{% endblock %}
 {% block content %}
-<div class="stack">
-  <div class="steps" aria-label="Step 1 of 3">
-    <span class="step on"><b>1</b>{{ t('step_photo') }}</span><span class="step-line"></span>
-    <span class="step"><b>2</b>{{ t('step_check') }}</span><span class="step-line"></span>
-    <span class="step"><b>3</b>{{ t('step_done') }}</span>
+{% set hi = lang == 'hi' %}
+<ol class="steps" aria-label="{{ 'चरण 1 / 3' if hi else 'Step 1 of 3' }}">
+  <li class="on" aria-current="step"><b>1</b>{{ t('step_photo') }}</li>
+  <li><b>2</b>{{ t('step_check') }}</li>
+  <li><b>3</b>{{ t('step_done') }}</li>
+</ol>
+<h1>{{ t('nav_add') }}</h1>
+{% if error %}<div class="banner" role="alert">{{ {'empty': 'No photo was received. Choose a photo and try again.', 'too_large': 'That photo is larger than 10 MB. Take a closer, smaller photo.', 'not_image': 'That file is not an image. Choose a JPG or PNG photo.'}.get(error, error) }}</div>{% endif %}
+
+<form class="card choice main-choice" id="photo-form" method="post" action="/extract" enctype="multipart/form-data">
+  <div class="choice-head">
+    <span class="ico" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7.5h3.5L8.5 4.5h7l2 3H21V19H3z"/><circle cx="12" cy="13" r="3.8"/></svg></span>
+    <div><h2>{{ t('add_photo') }}</h2><p class="muted">{{ t('add_photo_sub') }}</p></div>
   </div>
-  <h1>{{ t('nav_add') }}</h1>
-  {% if error %}<div class="banner">{{ {'empty': 'No photo was received. Please try again.', 'too_large': 'That photo is larger than 10 MB. Please take a smaller one.', 'not_image': 'That file is not an image. Please upload a photo.'}.get(error, error) }}</div>{% endif %}
+  <label class="drop" id="drop">
+    <input type="file" name="photo" id="photo" accept="image/*" capture="environment" required class="sr-only">
+    <img id="preview" alt="" hidden>
+    <span id="drop-text"><b>{{ 'फ़ोटो लेने के लिए यहाँ टैप करें' if hi else 'Tap here to take a photo' }}</b><span class="small muted">{{ 'या कोई फ़ोटो चुनें। JPG या PNG, 10 MB तक।' if hi else 'Or choose one. JPG or PNG, up to 10 MB.' }}</span></span>
+  </label>
+  <button class="btn big" id="read-btn" type="submit" disabled>{{ t('read_label') }}</button>
+  <div class="spinner" role="status"><span class="spin"></span>{{ t('reading') }}</div>
+  <p class="small muted privacy">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    {{ t('privacy') }}</p>
+</form>
 
-  <form class="card choice hero" id="photo-form" method="post" action="/extract" enctype="multipart/form-data">
-    <div style="display:flex;gap:14px;align-items:center">
-      <div class="icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7.5h3.5L8.5 4.5h7l2 3H21V19H3z"/><circle cx="12" cy="13" r="3.8"/></svg></div>
-      <div><h2 style="margin:0">{{ t('add_photo') }}</h2><p class="muted" style="margin:2px 0 0">{{ t('add_photo_sub') }}</p></div>
+<div class="more-ways">
+  <div class="card choice">
+    <h3>{{ t('scan_qr') }}</h3>
+    <p class="muted small">{{ t('scan_qr_sub') }}</p>
+    <label class="btn ghost" for="qr-file">{{ 'QR स्कैन करें' if hi else 'Scan QR code' }}</label>
+    <input type="file" id="qr-file" accept="image/*" capture="environment" class="sr-only">
+    <div id="qr-status" class="small" role="status"></div>
+    <form id="qr-form" method="post" action="/strip-qr" hidden><input type="hidden" name="text" id="qr-text"></form>
+  </div>
+  <div class="card choice">
+    <h3>{{ t('add_manual') }}</h3>
+    <p class="muted small">{{ t('add_manual_sub') }}</p>
+    <div class="search" role="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input type="search" id="q" placeholder="{{ 'ब्रांड या घटक' if hi else 'Brand or ingredient' }}" aria-label="{{ 'कैटलॉग में खोजें' if hi else 'Search the catalogue' }}" autocomplete="off">
+      <div class="search-results" id="q-results" role="listbox" hidden></div>
     </div>
-    <label class="drop" id="drop">
-      <input type="file" name="photo" id="photo" accept="image/*" capture="environment" required class="sr-only">
-      <img id="preview" alt="" hidden>
-      <span id="drop-text"><b style="font-size:1.1rem">📷 Tap here to take a photo</b><br><span class="small muted">or choose one · JPG / PNG · up to 10 MB</span></span>
-    </label>
-    <button class="btn big" id="read-btn" type="submit" disabled>{{ t('read_label') }} →</button>
-    <div class="spinner" role="status"><span class="spin"></span>{{ t('reading') }}</div>
-    <p class="small muted" style="margin:0">🔒 {{ t('privacy') }}</p>
-  </form>
-
-  <div class="more-ways">
-    <div class="card choice">
-      <h3 style="margin:0">▦ {{ t('scan_qr') }}</h3>
-      <p class="muted small" style="margin:0">{{ t('scan_qr_sub') }}</p>
-      <label class="btn ghost" for="qr-file">Scan QR</label>
-      <input type="file" id="qr-file" accept="image/*" capture="environment" class="sr-only">
-      <div id="qr-status" class="small" role="status"></div>
-      <form id="qr-form" method="post" action="/strip-qr" hidden><input type="hidden" name="text" id="qr-text"></form>
-    </div>
-    <div class="card choice">
-      <h3 style="margin:0">⌨ {{ t('add_manual') }}</h3>
-      <p class="muted small" style="margin:0">{{ t('add_manual_sub') }}</p>
-      <a class="btn ghost" href="/manual">{{ t('add_manual') }}</a>
-    </div>
+    <a class="text-link" href="/manual">{{ 'या संरचना खुद लिखें' if hi else 'Or enter the composition yourself' }}</a>
   </div>
 </div>
 {% endblock %}
@@ -73,11 +80,11 @@ qrFile.addEventListener('change', async () => {
       const r = jsQR(ctx.getImageData(0, 0, c.width, c.height).data, c.width, c.height);
       if (r) text = r.data;
     }
-    if (!text) { qrStatus.textContent = 'No QR code found. Try a closer, sharper photo, or take a photo of the label instead.'; return; }
-    qrStatus.textContent = 'QR code read ✓';
+    if (!text) { qrStatus.textContent = 'No QR code found. Take a closer, sharper photo, or photograph the label instead.'; return; }
+    qrStatus.textContent = 'QR code read.';
     document.getElementById('qr-text').value = text;
     document.getElementById('qr-form').submit();
-  } catch (e) { qrStatus.textContent = 'Could not open that image.'; }
+  } catch (e) { qrStatus.textContent = 'That image could not be opened. Choose a JPG or PNG photo.'; }
 });
 </script>
 {% endblock %}

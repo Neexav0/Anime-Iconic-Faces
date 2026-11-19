@@ -1,9 +1,10 @@
 {% extends "base.html" %}
+{% block title %}{{ t('nav_eval') }} | Medora{% endblock %}
 {% block content %}
 <div class="stack">
   <div>
     <h1>{{ t('nav_eval') }}</h1>
-    <p class="lead">This page re-runs live on every load. A labelled synthetic test set (salts, synonyms, typos, low-dose exclusions, unknown medicines and injection-style text) goes through the same rule engine the app uses. It measures whether the implementation is correct. It is not a clinical validation.</p>
+    <p class="lead">This page re-runs live on every load. A labelled synthetic test set (salts, synonyms, typos, low-dose exclusions, unknown medicines and injection-style text) goes through the same rule engine the app uses. It measures whether the implementation is correct. It is not a clinical validation. Data store: {{ db_kind }}.</p>
   </div>
   <div class="grid3">
     <div class="stat {{ '' if ev.passed == ev.total else 'warn' }}"><b>{{ ev.passed }}/{{ ev.total }}</b><span>labelled cases passing</span></div>
@@ -12,7 +13,7 @@
     <div class="stat grey"><b>{{ ev.not_assessed.correct }}/{{ ev.not_assessed.expected }}</b><span>unknowns correctly marked "Not assessed"</span></div>
   </div>
 
-  <div class="card table-scroll" style="padding:6px 8px">
+  <div class="card table-scroll flush">
     <table class="plain">
       <thead><tr><th>Rule</th><th>TP</th><th>FP</th><th>FN</th><th>Precision</th><th>Recall</th></tr></thead>
       <tbody>
@@ -25,7 +26,7 @@
     </table>
   </div>
 
-  <div class="card table-scroll" style="padding:6px 8px">
+  <div class="card table-scroll flush">
     <table class="plain">
       <thead><tr><th>Case</th><th>Scenario</th><th>Expected</th><th>Fired</th><th></th></tr></thead>
       <tbody>

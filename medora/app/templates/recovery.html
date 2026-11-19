@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ 'रिकवरी कोड' if lang == 'hi' else 'Recovery code' }} | Medora{% endblock %}
+{% block width %}auth-wrap{% endblock %}
+{% block content %}
+{% set hi = lang == 'hi' %}
+<div class="auth-card card">
+  {% if reason == 'reset' %}
+  <div class="ok-box" role="status">{{ 'पासवर्ड बदल गया। बाकी सभी डिवाइस से साइन आउट कर दिया गया है।' if hi else 'Your password is changed, and every other device has been signed out.' }}</div>
+  {% endif %}
+  <h1>{{ 'अपना रिकवरी कोड सँभाल कर रखें' if hi else 'Save your recovery code' }}</h1>
+  <p>{{ 'अगर आप पासवर्ड भूल जाएँ, तो इसी कोड से नया पासवर्ड बना सकते हैं। यह कोड सिर्फ़ अभी दिखेगा।' if hi else 'If you forget your password, this code lets you set a new one. It is shown only now.' }}</p>
+  <p class="code-box" id="code">{{ code }}</p>
+  <div class="row-actions">
+    <button type="button" class="btn ghost" id="copy-code" data-done="{{ 'कॉपी हो गया' if hi else 'Copied' }}">{{ 'कोड कॉपी करें' if hi else 'Copy code' }}</button>
+    <button type="button" class="btn ghost" onclick="window.print()">{{ 'प्रिंट करें' if hi else 'Print' }}</button>
+  </div>
+  <p class="help">{{ 'इसे लिखकर अपनी दवाओं के पास रखें, या परिवार के किसी सदस्य को दें। जब भी आप इसका उपयोग करेंगे, एक नया कोड मिलेगा।' if hi else 'Write it down and keep it with your medicines, or give it to a family member. Each time you use it, you get a new one.' }}</p>
+  {% if reason != 'signup' %}<p class="warn-line">{{ 'आपका पुराना रिकवरी कोड अब काम नहीं करेगा।' if hi else 'Your old recovery code no longer works.' }}</p>{% endif %}
+  <a class="btn big" href="/">{{ 'मैंने कोड सहेज लिया, आगे बढ़ें' if hi else 'I have saved it, continue' }}</a>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('copy-code').addEventListener('click', async (e) => {
+  try { await navigator.clipboard.writeText(document.getElementById('code').textContent.trim()); e.target.textContent = e.target.dataset.done; } catch (err) {}
+});
+</script>
+{% endblock %}

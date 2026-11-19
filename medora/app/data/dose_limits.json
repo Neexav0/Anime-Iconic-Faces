@@ -1,0 +1,43 @@
+{
+  "_note": "Daily maximums from product labels and the WHO Model Formulary for Children. Medora only compares the total you entered with these limits; it never suggests a dose. Prototype values pending pharmacist review.",
+  "child_below_age": 12,
+  "limits": {
+    "paracetamol": {
+      "adult_mg_day": 4000,
+      "child_mg_per_kg_day": 60,
+      "child_cap_mg_day": 4000,
+      "child_min_age": 0,
+      "sources": [
+        "DM-APAP-OTC",
+        "WHO-MFC-2010"
+      ]
+    },
+    "ibuprofen": {
+      "adult_mg_day": 1200,
+      "adult_basis": "otc",
+      "child_mg_per_kg_day": 30,
+      "child_cap_mg_day": 1200,
+      "child_min_age": 0,
+      "sources": [
+        "DM-NSAID-OTC",
+        "WHO-MFC-2010"
+      ]
+    },
+    "chlorpheniramine": {
+      "adult_mg_day": 24,
+      "child_mg_day": 12,
+      "child_min_age": 6,
+      "sources": [
+        "DM-CPM-OTC"
+      ]
+    },
+    "phenylephrine": {
+      "adult_mg_day": 60,
+      "child_mg_day": 30,
+      "child_min_age": 6,
+      "sources": [
+        "DM-PE-OTC"
+      ]
+    }
+  }
+}

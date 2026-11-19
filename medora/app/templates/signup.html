@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ 'खाता बनाएँ' if lang == 'hi' else 'Create account' }} | Medora{% endblock %}
+{% block bodyclass %}auth{% endblock %}
+{% block width %}auth-wrap{% endblock %}
+{% block content %}
+{% set hi = lang == 'hi' %}
+<div class="auth-card card">
+  <h1>{{ 'अपना पासपोर्ट बनाएँ' if hi else 'Create your passport' }}</h1>
+  <p class="muted">{{ 'आप बाद में अपने माता-पिता या बच्चों को भी जोड़ सकते हैं।' if hi else 'You can add a parent or a child to the same account later.' }}</p>
+  {% if error %}<div class="banner" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/signup" class="auth-form" novalidate>
+    <label class="field"><span>{{ 'आपका नाम' if hi else 'Your name' }}</span>
+      <input type="text" name="name" required maxlength="120" autocomplete="name" value="{{ form.name or '' }}">
+    </label>
+    <label class="field"><span>{{ 'उम्र (वैकल्पिक)' if hi else 'Age (optional)' }}</span>
+      <input type="number" name="age" min="0" max="124" inputmode="numeric" value="{{ form.age or '' }}" class="w-short">
+    </label>
+    <label class="field"><span>{{ 'ईमेल या मोबाइल नंबर' if hi else 'Email or mobile number' }}</span>
+      <input type="text" name="login" required maxlength="160" autocomplete="username" inputmode="email" value="{{ form.login or '' }}" aria-describedby="login-help">
+      <small id="login-help" class="help">{{ 'इसी से आप लॉग इन करेंगे।' if hi else 'You will use this to log in.' }}</small>
+    </label>
+    <label class="field"><span>{{ 'पासवर्ड' if hi else 'Password' }}</span>
+      <span class="pw">
+        <input type="password" name="password" required minlength="8" maxlength="200" autocomplete="new-password" aria-describedby="pw-help">
+        <button type="button" class="pw-toggle" data-show="{{ 'दिखाएँ' if hi else 'Show' }}" data-hide="{{ 'छुपाएँ' if hi else 'Hide' }}">{{ 'दिखाएँ' if hi else 'Show' }}</button>
+      </span>
+      <small id="pw-help" class="help">{{ 'कम से कम 8 अक्षर।' if hi else 'At least 8 characters.' }}</small>
+    </label>
+    <fieldset class="lang-pick">
+      <legend>{{ 'भाषा' if hi else 'Language' }}</legend>
+      <label class="tile"><input type="radio" name="lang" value="en" {{ 'checked' if not hi }}><span>English</span></label>
+      <label class="tile"><input type="radio" name="lang" value="hi" {{ 'checked' if hi }}><span lang="hi">हिंदी</span></label>
+    </fieldset>
+    <button class="btn big" type="submit">{{ 'खाता बनाएँ' if hi else 'Create account' }}</button>
+  </form>
+  <p class="auth-switch">{{ 'पहले से खाता है?' if hi else 'Already have an account?' }} <a href="/login">{{ 'लॉग इन करें' if hi else 'Log in' }}</a></p>
+</div>
+<p class="auth-fine">{{ 'हम आपका पासवर्ड कभी सादे रूप में नहीं रखते। दवा की फ़ोटो कभी सहेजी नहीं जाती।' if hi else 'Your password is never stored in readable form. Medicine photos are never saved.' }}</p>
+{% endblock %}

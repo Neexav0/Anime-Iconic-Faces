@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block title %}{{ t('health_title') }} | Medora{% endblock %}
 {% block content %}
 <form class="stack" method="post" action="/health">
   <div>
@@ -7,7 +8,7 @@
   </div>
 
   <section class="card stack">
-    <h2 style="margin:0">💊 {{ t('allergies_q') }}</h2>
+    <h2>{{ t('allergies_q') }}</h2>
     <div class="tiles">
       {% for g in groups %}
       <label class="tile">
@@ -21,34 +22,34 @@
     </label>
     <label class="tile none">
       <input type="checkbox" name="no_allergies" id="no-allergies" {{ 'checked' if patient.allergies == [] }}>
-      <span>✓ {{ t('no_allergies') }}</span>
+      <span>{{ t('no_allergies') }}</span>
     </label>
   </section>
 
   <section class="card stack">
-    <h2 style="margin:0">🩺 {{ t('symptoms_q') }}</h2>
+    <h2>{{ t('symptoms_q') }}</h2>
     <div class="tiles">
       {% for s in symptoms if not s.red_flag %}
       <label class="tile">
         <input type="checkbox" name="symptom" value="{{ s.code }}" {{ 'checked' if s.code in chosen_symptoms }}>
-        <span><b aria-hidden="true">{{ s.icon }}</b> {{ s[lang] or s.en }}</span>
+        <span>{{ s[lang] or s.en }}</span>
       </label>
       {% endfor %}
     </div>
-    <h3 style="margin:8px 0 0;color:var(--red)">⚠ {{ t('serious_q') }}</h3>
+    <h3 class="danger-h">{{ t('serious_q') }}</h3>
     <div class="tiles">
       {% for s in symptoms if s.red_flag %}
       <label class="tile red">
         <input type="checkbox" name="symptom" value="{{ s.code }}" {{ 'checked' if s.code in chosen_symptoms }}>
-        <span><b aria-hidden="true">{{ s.icon }}</b> {{ s[lang] or s.en }}</span>
+        <span>{{ s[lang] or s.en }}</span>
       </label>
       {% endfor %}
     </div>
   </section>
 
-  <p class="small muted" style="margin:0">{{ t('disclaimer') }}</p>
-  <div style="display:flex;gap:12px;flex-wrap:wrap">
-    <button class="btn big" type="submit">✓ {{ t('save_health') }}</button>
+  <p class="small muted">{{ t('disclaimer') }}</p>
+  <div class="row-actions">
+    <button class="btn big" type="submit">{{ t('save_health') }}</button>
     <a class="btn big ghost" href="/">{{ t('discard') }}</a>
   </div>
 </form>

@@ -1,19 +1,25 @@
 {% extends "base.html" %}
+{% block title %}{{ t('share_title') }} | Medora{% endblock %}
 {% block content %}
-<div class="stack" style="text-align:center">
+<div class="stack share">
   <h1>{{ t('share_title') }}</h1>
-  <p class="lead" style="margin:0 auto">{{ t('share_sub') }}</p>
+  <p class="lead">{{ t('share_sub') }}</p>
   <div class="qr-box">{{ qr|safe }}</div>
-  <p class="small muted" style="margin:0;word-break:break-all">{{ url }}</p>
-  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <a class="btn big" href="/passport.pdf">⬇ {{ t('download_pdf') }}</a>
-    <button class="btn big warm" type="button" id="share-btn">👨‍👩‍👧 {{ t('send_family') }}</button>
+  {% if revoked %}<div class="ok-box" role="status">{{ 'पुराना लिंक अब काम नहीं करता। यह नया लिंक है।' if lang == 'hi' else 'The old link no longer works. This is a new one.' }}</div>{% endif %}
+  <p class="small muted share-url">{{ url }}</p>
+  <p class="small muted">{{ ('यह लिंक %s तक काम करेगा।' if lang == 'hi' else 'This link works until %s.')|format(expires.strftime('%d %b %Y')) }}</p>
+  <div class="row-actions center">
+    <a class="btn big" href="/passport.pdf">{{ t('download_pdf') }}</a>
+    <button class="btn big ghost" type="button" id="share-btn">{{ t('send_family') }}</button>
   </div>
-  <div class="note" style="text-align:left">
-    <b>{{ patient.name or '—' }}</b> · {{ entries|length }} {{ t('medicine_count') }} · {{ result.alerts|length }} {{ t('alerts')|lower }}.
+  <div class="note">
+    <b>{{ patient.name or 'This passport' }}</b>: {{ entries|length }} {{ t('medicine_count') }}, {{ result.alerts|length }} {{ t('alerts')|lower }}.
     The link opens a review page where your pharmacist can mark each point as discussed and leave a note for you.
   </div>
-  <a class="btn plain" href="/">← {{ t('nav_passport') }}</a>
+  <form method="post" action="/share/revoke" onsubmit="return confirm('{{ 'पुराना लिंक बंद करें और नया बनाएँ?' if lang == 'hi' else 'Stop the current link and make a new one?' }}')">
+    <button class="btn plain" type="submit">{{ 'यह लिंक बंद करें' if lang == 'hi' else 'Stop this link working' }}</button>
+  </form>
+  <a class="btn plain" href="/">{{ t('nav_passport') }}</a>
 </div>
 <script type="application/json" id="share-text">{{ share_text|tojson }}</script>
 {% endblock %}

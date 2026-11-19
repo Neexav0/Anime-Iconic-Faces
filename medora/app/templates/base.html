@@ -3,81 +3,108 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Medora · {{ t('app_tag') }}</title>
+<title>{% block title %}Medora{% endblock %}</title>
+<meta name="description" content="Medora checks every medicine you take at the ingredient level, catches hidden duplicates across brands, and prepares a sourced summary for your pharmacist.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700;800&family=Atkinson+Hyperlegible:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Sacramento&family=Kalam:wght@300;400&display=swap">
-<link rel="stylesheet" href="/static/style.css?v=30">
-<link rel="stylesheet" href="/static/v3.css?v=2">
-<meta name="theme-color" content="#0B3D33">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230b6b5d'/%3E%3Cpath d='M9 22V10l7 8 7-8v12' stroke='white' stroke-width='3' fill='none' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;700;800&family=Atkinson+Hyperlegible+Mono:wght@400;500;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="/static/medora.css?v=7">
+<meta name="theme-color" content="#F5F7F6">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230D6B4F'/%3E%3Cpath d='M9 22V10l7 8 7-8v12' stroke='white' stroke-width='3' fill='none' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E">
 </head>
-<body class="{% block bodyclass %}{% endblock %}">
 {% set p = request.url.path %}
-{% set expert = p in ['/pharmacist', '/rules', '/catalogue', '/eval'] or p.startswith('/p/') %}
-<div class="hero-bg" aria-hidden="true"><span class="hb-c1"></span><span class="hb-c2"></span></div>
-<div class="page-blobs" aria-hidden="true"><i></i><i></i><i></i></div>
+{% set hi = lang == 'hi' %}
+{% set public = p in ['/welcome', '/login', '/signup', '/forgot'] or p.startswith('/p/') %}
+{% set signed_in = me and me.pid and not public %}
+<body class="{% block bodyclass %}{% endblock %}">
+<a class="skip" href="#main">{{ 'मुख्य सामग्री पर जाएँ' if hi else 'Skip to content' }}</a>
 <header class="top">
-  <div class="wrap">
-    <a class="logo" href="/" aria-label="Medora home">
-      <span><b>Medora</b><small>{{ t('app_tag') }}</small></span>
+  <div class="wrap top-in">
+    <a class="logo" href="{{ '/welcome' if public else '/' }}" aria-label="Medora home">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="currentColor"/><path d="M9 22V10l7 8 7-8v12" stroke="#fff" stroke-width="3" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      <b>Medora</b>
     </a>
-    {% if p != '/welcome' and not p.startswith('/p/') %}
-    <div class="search" role="search">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-      <input type="search" id="q" placeholder="{{ 'ब्रांड या घटक से खोजें' if lang == 'hi' else 'Search by brand or ingredient' }}" aria-label="{{ 'दवा खोजें' if lang == 'hi' else 'Search medicines' }}" autocomplete="off">
-      <div class="search-results" id="q-results" role="listbox" hidden></div>
-    </div>
-    <nav class="seg modes" aria-label="View">
-      <a href="/" class="{{ 'on' if not expert }}">{{ t('mode_patient') }}</a>
-      <a href="/pharmacist" class="{{ 'on' if expert }}">{{ t('mode_pharmacist') }}</a>
+    {% if p == '/welcome' %}
+    <nav class="nav" aria-label="{{ 'पेज' if hi else 'Page' }}">
+      <a href="#how">{{ 'कैसे काम करता है' if hi else 'How it works' }}</a>
+      <a href="#checks">{{ 'क्या जाँचता है' if hi else 'What it checks' }}</a>
+      <a href="#evidence">{{ 'परीक्षण' if hi else 'Evidence' }}</a>
+    </nav>
+    {% elif signed_in %}
+    <nav class="nav" aria-label="Main">
+      <a href="/" {{ 'aria-current=page' if p == '/' }}>{{ t('nav_passport') }}</a>
+      <a href="/add" {{ 'aria-current=page' if p.startswith('/add') or p.startswith('/confirm') or p.startswith('/manual') }}>{{ t('nav_add') }}</a>
+      <a href="/health" {{ 'aria-current=page' if p == '/health' }}>{{ 'स्वास्थ्य' if hi else 'Health' }}</a>
+      <a href="/pharmacist" {{ 'aria-current=page' if p in ['/pharmacist', '/share'] }}>{{ t('mode_pharmacist') }}</a>
     </nav>
     {% endif %}
     <div class="prefs">
-      <div class="seg">
-        <a class="{{ 'on' if lang == 'en' }}" href="/settings?lang=en&back={{ p }}" lang="en">EN</a>
-        <a class="{{ 'on' if lang == 'hi' }}" href="/settings?lang=hi&back={{ p }}" lang="hi">हिंदी</a>
+      <div class="seg" role="group" aria-label="{{ 'भाषा' if hi else 'Language' }}">
+        <a class="{{ 'on' if not hi }}" href="/settings?lang=en&back={{ p }}" lang="en" {{ 'aria-current=true' if not hi }}>EN</a>
+        <a class="{{ 'on' if hi }}" href="/settings?lang=hi&back={{ p }}" lang="hi" {{ 'aria-current=true' if hi }}>हिंदी</a>
       </div>
-      <a class="chip-btn {{ 'on' if large }}" href="/settings?large={{ '0' if large else '1' }}&back={{ p }}" aria-label="{{ t('large_text') }}">Aa</a>
-      {% if p != '/welcome' and not p.startswith('/p/') and request.cookies.get('pid') %}
-      <form method="post" action="/logout" class="who"><button type="submit" class="chip-btn" title="{{ 'कोई और व्यक्ति' if lang == 'hi' else 'Switch person' }}" aria-label="{{ 'कोई और व्यक्ति' if lang == 'hi' else 'Switch person' }}">⇄</button></form>
+      <a class="icon-btn {{ 'on' if large }}" href="/settings?large={{ '0' if large else '1' }}&back={{ p }}" aria-pressed="{{ 'true' if large else 'false' }}" title="{{ t('large_text') }}"><span aria-hidden="true">Aa</span><span class="sr-only">{{ t('large_text') }}</span></a>
+      {% if signed_in %}
+      <a class="person-btn {{ 'on' if p == '/people' }}" href="/people" title="{{ 'व्यक्ति बदलें' if hi else 'Change person' }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        <span class="pname">{{ me.patient_name }}</span>
+      </a>
+      <form method="post" action="/logout" class="who"><button type="submit" class="icon-btn" title="{{ 'साइन आउट' if hi else 'Sign out' }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3"/></svg>
+        <span class="sr-only">{{ 'साइन आउट' if hi else 'Sign out' }}</span></button></form>
+      {% elif me and me.pid %}
+      <a class="btn sm" href="/">{{ 'मेरा पासपोर्ट' if hi else 'My passport' }}</a>
+      {% else %}
+      {% if p != '/login' %}<a class="nav-link" href="/login">{{ 'लॉग इन' if hi else 'Log in' }}</a>{% endif %}
+      {% if p != '/signup' %}<a class="btn sm" href="/signup">{{ 'शुरू करें' if hi else 'Get started' }}</a>{% endif %}
       {% endif %}
     </div>
   </div>
 </header>
-<main class="wrap {% block width %}narrow{% endblock %}">
+{% if signed_in and me.is_demo %}
+<div class="demo-bar" role="note"><div class="wrap">
+  <span>{{ 'आप एक सैंपल मरीज़ देख रहे हैं। यहाँ जोड़ी गई चीज़ें 2 दिन बाद मिट जाती हैं।' if hi else 'You are exploring a sample patient. Anything you add here is deleted after 2 days.' }}</span>
+  <a href="/signup">{{ 'अपना खाता बनाएँ' if hi else 'Create your own account' }}</a>
+</div></div>
+{% endif %}
+<main id="main" class="wrap {% block width %}narrow{% endblock %}">
 {% block content %}{% endblock %}
 </main>
 <footer class="foot">
-  <div class="wrap">
-    <div class="links">
-      <span>{{ t('for_experts') }}:</span>
-      <a href="/pharmacist">{{ t('mode_pharmacist') }}</a>
-      <a href="/rules">{{ t('nav_rules') }}</a>
-      <a href="/catalogue">Catalogue</a>
-      <a href="/eval">{{ t('nav_eval') }}</a>
+  <div class="wrap foot-in">
+    <div class="foot-brand">
+      <b>Medora</b>
+      <p>{{ t('disclaimer') }}</p>
     </div>
-    <div>{{ t('disclaimer') }} · Data store: {{ db_kind }} · Prototype for Aarambhathon; demo data is synthetic.</div>
-    <details>
+    <nav class="foot-links" aria-label="{{ 'विशेषज्ञों के लिए' if hi else 'For experts' }}">
+      <a href="/rules">{{ t('nav_rules') }}</a>
+      <a href="/catalogue">{{ 'ब्रांड सूची' if hi else 'Brand catalogue' }}</a>
+      <a href="/eval">{{ t('nav_eval') }}</a>
+      {% if signed_in %}<a href="/pharmacist">{{ 'फ़ार्मासिस्ट दृश्य' if hi else 'Pharmacist view' }}</a>{% endif %}
+    </nav>
+    {% if signed_in and me.is_demo %}
+    <details class="demo">
       <summary>{{ t('demo') }}</summary>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <div class="demo-list">
         {% for key, d in demos.items() %}
-        <form method="post" action="/demo/{{ key }}"><button class="btn ghost" style="min-height:40px;font-size:.8rem" type="submit" title="{{ d.title }}">{{ d.name }} · {{ d.title }}</button></form>
+        <form method="post" action="/demo/{{ key }}"><button class="btn ghost sm" type="submit">{{ d.name }}: {{ d.title }}</button></form>
         {% endfor %}
-        <form method="post" action="/demo/reset"><button class="btn danger" style="min-height:40px;font-size:.8rem" type="submit">{{ t('reset') }}</button></form>
+        <form method="post" action="/demo/reset"><button class="btn danger sm" type="submit">{{ t('reset') }}</button></form>
       </div>
     </details>
+    {% endif %}
+    <p class="foot-note">{{ 'Aarambhathon के लिए बनाया गया प्रोटोटाइप। डेमो डेटा काल्पनिक है।' if hi else 'Prototype built for Aarambhathon. Demo data is synthetic.' }}</p>
   </div>
 </footer>
-{% if p != '/welcome' and not p.startswith('/p/') %}
+{% if signed_in %}
 <nav class="tabbar" aria-label="Main">
-  <a href="/" class="{{ 'on' if p == '/' }}"><span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>{{ t('nav_passport') }}</a>
-  <a href="/add" class="add {{ 'on' if p.startswith('/add') or p.startswith('/confirm') }}"><span class="ti"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>{{ t('nav_add') }}</a>
-  <a href="/share" class="{{ 'on' if p == '/share' }}"><span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM17 17h4v4h-4"/></svg></span>{{ t('mode_pharmacist') }}</a>
-  <a href="/health" class="{{ 'on' if p == '/health' }}"><span class="ti"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3v6a5 5 0 0 0 10 0V3M11 14v2a4 4 0 0 0 8 0v-2"/><circle cx="19" cy="12" r="2"/></svg></span>{{ 'स्वास्थ्य' if lang == 'hi' else 'Health' }}</a>
+  <a href="/" {{ 'aria-current=page' if p == '/' }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>{{ t('nav_passport') }}</a>
+  <a href="/add" class="add" {{ 'aria-current=page' if p.startswith('/add') or p.startswith('/confirm') or p.startswith('/manual') }}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>{{ t('nav_add') }}</a>
+  <a href="/share" {{ 'aria-current=page' if p == '/share' }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM17 17h4v4h-4"/></svg>{{ t('mode_pharmacist') }}</a>
+  <a href="/health" {{ 'aria-current=page' if p == '/health' }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 3v6a5 5 0 0 0 10 0V3M11 14v2a4 4 0 0 0 8 0v-2"/><circle cx="19" cy="12" r="2"/></svg>{{ 'स्वास्थ्य' if hi else 'Health' }}</a>
 </nav>
 {% endif %}
-<script src="/static/app.js?v=30" defer></script>
-<script src="/static/v3.js?v=1" defer></script>
+<script src="/static/app.js?v=32" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

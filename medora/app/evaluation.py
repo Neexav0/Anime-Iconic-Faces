@@ -17,13 +17,13 @@ CASES_PATH = Path(__file__).resolve().parent.parent / "tests" / "cases.json"
 
 
 def case_to_entries(case: dict) -> list[dict]:
-    return [{"id": i + 1, "name": name, "brand_id": None,
-             "ingredients": [{"raw": r, "strength": s} for r, s in ings]}
-            for i, (name, ings) in enumerate(case["entries"])]
+    return [{"id": i + 1, "name": e[0], "brand_id": None, "per_day": e[2] if len(e) > 2 else None,
+             "ingredients": [{"raw": r, "strength": s} for r, s in e[1]]}
+            for i, e in enumerate(case["entries"])]
 
 
 def run_case(case: dict, kb: KB) -> dict:
-    res = evaluate(case_to_entries(case), {"age": case.get("age")}, kb)
+    res = evaluate(case_to_entries(case), {"age": case.get("age"), "weight_kg": case.get("weight_kg")}, kb)
     fired = sorted({a["rule_id"] for a in res["alerts"]})
     dups = sorted({a["ingredient_key"] for a in res["alerts"] if a["rule_id"] == "R-DUP-001"})
     na = sorted(n["entry"] for n in res["not_assessed"])

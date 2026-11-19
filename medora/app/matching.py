@@ -44,6 +44,19 @@ def parse_mg(strength: str | None) -> float | None:
     return {"mg": val, "g": val * 1000, "mcg": val / 1000, "µg": val / 1000}[unit]
 
 
+def parse_dose_strength(strength: str | None) -> tuple[float, str] | None:
+    """Amount of ingredient in one unit you take.
+    '650 mg' -> (650.0, 'unit'); '250 mg/5 ml' -> (50.0, 'ml'); unparseable -> None."""
+    mg = parse_mg(strength)
+    if mg is None:
+        return None
+    m = re.search(r"/\s*(\d+(?:\.\d+)?)?\s*ml(?![a-z])", strength or "", re.I)
+    if m:
+        vol = float(m.group(1) or 1)
+        return (mg / vol, "ml") if vol > 0 else None
+    return mg, "unit"
+
+
 MONTHS = {m: i for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], 1)}
 
 

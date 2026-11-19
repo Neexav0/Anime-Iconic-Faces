@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Medora{% endblock %}
+{% block width %}auth-wrap{% endblock %}
+{% block content %}
+<div class="auth-card card" role="status">
+  <h1>{{ title }}</h1>
+  <p>{{ body }}</p>
+  <a class="btn ghost" href="/welcome">{{ 'Medora होम पर जाएँ' if lang == 'hi' else 'Go to the Medora home page' }}</a>
+</div>
+{% endblock %}

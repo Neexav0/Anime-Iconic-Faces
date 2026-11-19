@@ -37,23 +37,50 @@ class BrandIngredient(Base):
     ingredient: Mapped[Ingredient] = relationship()
 
 
+class Account(Base):
+    """Someone who signs in. One account can look after several people (a parent, a child)."""
+    __tablename__ = "accounts"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    login: Mapped[str] = mapped_column(String(160), unique=True, index=True)  # normalised email or 10-digit mobile
+    name: Mapped[str] = mapped_column(String(120), default="")
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)  # None for sample accounts
+    recovery_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)  # one-time code to reset the password
+    is_demo: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class AuthSession(Base):
+    """A signed-in browser. Only a SHA-256 of the cookie token is stored."""
+    __tablename__ = "auth_sessions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"), index=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True)  # person being viewed
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+
 class Patient(Base):
     __tablename__ = "patients"
     id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[int | None] = mapped_column(ForeignKey("accounts.id"), nullable=True, index=True)
     name: Mapped[str] = mapped_column(String(120), default="")
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
     allergies: Mapped[list | None] = mapped_column(JSON, nullable=True)  # group codes or free text
     symptoms: Mapped[list | None] = mapped_column(JSON, nullable=True)   # codes from symptoms.json
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     def as_engine_dict(self) -> dict:
-        return {"age": self.age, "allergies": self.allergies or [], "symptoms": self.symptoms or []}
+        return {"age": self.age, "weight_kg": self.weight_kg, "allergies": self.allergies or [],
+                "symptoms": self.symptoms or []}
 
 
 class Draft(Base):
     """An unconfirmed extraction. Never used by the rule engine."""
     __tablename__ = "drafts"
     id: Mapped[int] = mapped_column(primary_key=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("patients.id"), nullable=True, index=True)
     origin: Mapped[str] = mapped_column(String(20))  # photo | manual
     extracted: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     error: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -74,12 +101,14 @@ class Entry(Base):
     printed_ingredients: Mapped[list | None] = mapped_column(JSON, nullable=True)
     expiry: Mapped[str | None] = mapped_column(String(40), nullable=True)
     batch: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    per_day: Mapped[float | None] = mapped_column(Float, nullable=True)  # tablets/capsules or ml per day, as entered
     user_confirmed: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     def as_engine_dict(self) -> dict:
         return {"id": self.id, "name": self.name, "brand_id": self.brand_id, "expiry": self.expiry,
-                "ingredients": self.ingredients or [], "printed_ingredients": self.printed_ingredients}
+                "ingredients": self.ingredients or [], "printed_ingredients": self.printed_ingredients,
+                "per_day": self.per_day}
 
 
 class Review(Base):
@@ -93,3 +122,4 @@ class Review(Base):
     general_note: Mapped[str] = mapped_column(String(500), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # link stops working after this

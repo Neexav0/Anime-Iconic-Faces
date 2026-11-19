@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ 'पासवर्ड भूल गए' if lang == 'hi' else 'Reset password' }} | Medora{% endblock %}
+{% block bodyclass %}auth{% endblock %}
+{% block width %}auth-wrap{% endblock %}
+{% block content %}
+{% set hi = lang == 'hi' %}
+<div class="auth-card card">
+  <h1>{{ 'नया पासवर्ड बनाएँ' if hi else 'Set a new password' }}</h1>
+  <p class="muted">{{ 'खाता बनाते समय मिला रिकवरी कोड लिखें।' if hi else 'Use the recovery code you saved when you created your account.' }}</p>
+  {% if error %}<div class="banner" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/forgot" class="auth-form" novalidate>
+    <label class="field"><span>{{ 'ईमेल या मोबाइल नंबर' if hi else 'Email or mobile number' }}</span>
+      <input type="text" name="login" required maxlength="160" autocomplete="username" inputmode="email" value="{{ login_value }}">
+    </label>
+    <label class="field"><span>{{ 'रिकवरी कोड' if hi else 'Recovery code' }}</span>
+      <input type="text" name="code" required maxlength="40" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" class="mono-input" placeholder="XXXX-XXXX-XXXX-XXXX">
+    </label>
+    <label class="field"><span>{{ 'नया पासवर्ड' if hi else 'New password' }}</span>
+      <span class="pw">
+        <input type="password" name="password" required minlength="8" maxlength="200" autocomplete="new-password">
+        <button type="button" class="pw-toggle" data-show="{{ 'दिखाएँ' if hi else 'Show' }}" data-hide="{{ 'छुपाएँ' if hi else 'Hide' }}">{{ 'दिखाएँ' if hi else 'Show' }}</button>
+      </span>
+      <small class="help">{{ 'कम से कम 8 अक्षर।' if hi else 'At least 8 characters.' }}</small>
+    </label>
+    <button class="btn big" type="submit">{{ 'पासवर्ड बदलें' if hi else 'Change password' }}</button>
+  </form>
+  <p class="auth-switch"><a href="/login">{{ 'लॉग इन पर वापस जाएँ' if hi else 'Back to log in' }}</a></p>
+</div>
+<p class="auth-fine">{{ 'रिकवरी कोड नहीं है? अगर परिवार का कोई सदस्य आपका खाता देखता है, तो उनसे पूछें। वरना एक नया खाता बनाएँ।' if hi else 'No recovery code? Ask the family member who helps with your account, or create a new account.' }}</p>
+{% endblock %}
