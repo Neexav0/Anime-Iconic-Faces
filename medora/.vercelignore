@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.env
+*.db
+*.pdf
+tests/
+scripts/
+app/data/vision_cache/
+.claude/

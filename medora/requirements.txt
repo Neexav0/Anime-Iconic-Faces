@@ -10,5 +10,4 @@ reportlab
 python-dotenv
 google-genai
 qrcode
-pytest
-httpx
+psycopg[binary]>=3.2

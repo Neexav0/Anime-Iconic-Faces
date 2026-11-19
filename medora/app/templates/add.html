@@ -53,11 +53,28 @@
 <script>
 const input = document.getElementById('photo'), img = document.getElementById('preview'),
       btn = document.getElementById('read-btn'), form = document.getElementById('photo-form');
-input.addEventListener('change', () => {
+// Phone photos are often 5-12 MB. Shrink to 2000 px on the long side (JPEG) before upload: faster on
+// mobile data, and under hosting upload limits. Labels stay sharp enough to read at this size.
+async function shrink(file) {
+  if (file.size < 1.5 * 1024 * 1024 || !('DataTransfer' in window)) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.88));
+    return blob && blob.size < file.size ? new File([blob], 'label.jpg', { type: 'image/jpeg' }) : file;
+  } catch (e) { return file; }  // e.g. a format the browser cannot decode: send as is
+}
+input.addEventListener('change', async () => {
   const f = input.files[0];
   if (!f) return;
   img.src = URL.createObjectURL(f); img.hidden = false;
   document.getElementById('drop-text').hidden = true;
+  btn.disabled = true;
+  const small = await shrink(f);
+  if (small !== f) { const dt = new DataTransfer(); dt.items.add(small); input.files = dt.files; }
   btn.disabled = false; btn.focus();
 });
 form.addEventListener('submit', () => { form.classList.add('busy'); btn.disabled = true; });

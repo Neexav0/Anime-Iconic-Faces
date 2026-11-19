@@ -18,7 +18,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-CACHE_DIR = Path(__file__).resolve().parent / "data" / "vision_cache"
+# Serverless hosts (Vercel) have a read-only app folder: cache under /tmp there.
+CACHE_DIR = Path(os.getenv("MEDORA_CACHE_DIR") or ("/tmp/medora-vision-cache" if os.getenv("VERCEL")
+                                                   else Path(__file__).resolve().parent / "data" / "vision_cache"))
 # Tried in order; a busy (503), rate-limited (429) or retired (404) model falls through to the next.
 DEFAULT_MODELS = "gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash,gemini-3.1-flash-lite"
 log = logging.getLogger("medora.vision")
@@ -110,6 +112,9 @@ def transcribe(image: bytes, mime_type: str) -> tuple[dict, str]:
         if cache.exists():
             return json.loads(cache.read_text(encoding="utf-8")), "cache"
         raise VisionError(f"Could not read the label automatically ({type(last_exc).__name__}). Please enter the details manually.") from last_exc
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    cache.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    try:  # the cache is a convenience: never fail a successful read because the disk is read-only or full
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    except OSError as exc:
+        log.warning("vision cache not written: %s", exc)
     return data, "gemini"

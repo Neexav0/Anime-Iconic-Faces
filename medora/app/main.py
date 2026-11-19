@@ -7,6 +7,7 @@ import os
 import re
 import secrets
 import socket
+import threading
 from datetime import datetime, timedelta
 from urllib.parse import quote, urlparse
 from pathlib import Path
@@ -67,12 +68,43 @@ DEMOS = {
 }
 
 
+_READY = threading.Lock()
+
+
+def ensure_ready() -> None:
+    """Create tables, seed the catalogue and load the KB once per process.
+    Called at startup and, for serverless hosts that skip lifespan events, on the first request."""
+    global KB
+    if KB is not None:
+        return
+    with _READY:
+        if KB is None:
+            init_db()
+            purge_old_demos()
+            KB = load_kb()
+
+
 @app.on_event("startup")
 def startup():
-    global KB
-    init_db()
-    KB = load_kb()
-    purge_old_demos()
+    ensure_ready()
+
+
+# Behind a hosting proxy (Vercel sets VERCEL=1) the socket peer is the proxy, not the visitor.
+TRUST_PROXY = bool(os.getenv("VERCEL") or os.getenv("TRUST_PROXY"))
+
+
+def client_ip(request: Request) -> str:
+    if TRUST_PROXY:
+        fwd = request.headers.get("x-real-ip") or request.headers.get("x-forwarded-for", "").split(",")[0]
+        if fwd.strip():
+            return fwd.strip()
+    return request.client.host if request.client else ""
+
+
+def is_https(request: Request) -> bool:
+    if TRUST_PROXY and request.headers.get("x-forwarded-proto"):
+        return request.headers["x-forwarded-proto"].split(",")[0].strip() == "https"
+    return request.url.scheme == "https"
 
 
 def ctx(request: Request, **kw):
@@ -116,6 +148,8 @@ class AuthMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or scope["path"].startswith("/static/"):
             return await self.app(scope, receive, send)
+        if KB is None:
+            await anyio.to_thread.run_sync(ensure_ready)
         req = Request(scope)
         path, method = scope["path"], scope["method"]
         if method == "POST":
@@ -270,7 +304,8 @@ def lan_base_url(request: Request) -> str:
                 host = sk.getsockname()[0]
         except OSError:
             pass
-    return f"{request.url.scheme}://{host}" + (f":{port}" if port else "")
+    scheme = "https" if is_https(request) else request.url.scheme
+    return f"{scheme}://{host}" + (f":{port}" if port and not TRUST_PROXY else "")
 
 
 def qr_svg(data: str) -> str:
@@ -333,7 +368,7 @@ def start_session(resp: Response, request: Request, account_id: int, patient_id:
                           expires_at=datetime.now() + timedelta(days=SESSION_DAYS)))
         s.commit()
     resp.set_cookie(SESSION_COOKIE, token, max_age=SESSION_DAYS * 86400, httponly=True, samesite="lax",
-                    secure=request.url.scheme == "https", path="/")
+                    secure=is_https(request), path="/")
 
 
 AUTH_ERRORS = {
@@ -369,7 +404,7 @@ def signup_page(request: Request):
 def signup(request: Request, name: str = Form(""), age: str = Form(""), login: str = Form(""), password: str = Form(""),
            lang: str = Form("en")):
     ui_lang = lang if lang in ("en", "hi") else request.cookies.get("lang", "en")
-    ip = request.client.host if request.client else ""
+    ip = client_ip(request)
     if SIGNUP_THROTTLE.blocked(f"ip:{ip}"):
         return too_many(request)
     name = " ".join(name.split())[:120]
@@ -417,7 +452,7 @@ def forgot(request: Request, login: str = Form(""), code: str = Form(""), passwo
     """Reset a password with the recovery code. Signs out every other device and issues a new code."""
     lang = request.cookies.get("lang", "en")
     norm = normalise_login(login) or (login or "").strip().lower()[:160]
-    ip = request.client.host if request.client else ""
+    ip = client_ip(request)
     keys = (f"login:{norm}", f"ip:{ip}")
     fail = lambda err, status: templates.TemplateResponse(
         request, "forgot.html", ctx(request, login_value=login, error=auth_error(err, lang)), status_code=status)
@@ -472,7 +507,7 @@ def login_page(request: Request, next: str = "/"):
 def login(request: Request, login: str = Form(""), password: str = Form(""), next: str = Form("/")):
     lang = request.cookies.get("lang", "en")
     norm = normalise_login(login) or (login or "").strip().lower()[:160]
-    ip = request.client.host if request.client else ""
+    ip = client_ip(request)
     keys = (f"login:{norm}", f"ip:{ip}")
     if LOGIN_THROTTLE.blocked(*keys):
         return templates.TemplateResponse(request, "login.html", ctx(
@@ -514,7 +549,7 @@ def try_demo(request: Request, key: str):
     demo = DEMOS.get(key)
     if not demo:
         return RedirectResponse("/welcome", status_code=303)
-    ip = request.client.host if request.client else ""
+    ip = client_ip(request)
     if SAMPLE_THROTTLE.blocked(f"ip:{ip}"):
         return too_many(request)
     SAMPLE_THROTTLE.hit(f"ip:{ip}")

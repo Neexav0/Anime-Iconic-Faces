@@ -11,15 +11,26 @@ cd medora
 
 Then open http://localhost:8000. Settings live in `.env` (see `.env.example`):
 - `GEMINI_API_KEY`: needed for photo reading. Without it, the photo path falls back to manual entry.
-- `DATABASE_URL`: points at MySQL. Leave it empty and the app uses SQLite.
+- `DATABASE_URL`: MySQL (`mysql+pymysql://…`) or Postgres (`postgres://…`). Leave it empty and the app uses SQLite.
 
 ## Test
 
 ```powershell
+.venv\Scripts\pip install -r requirements-dev.txt
 .venv\Scripts\python -m pytest -q tests
 ```
 
+Web tests run against a throwaway SQLite file, never your `DATABASE_URL`.
+
 The same labelled cases also render live at `/eval`.
+
+## Deploy (Vercel)
+
+1. Import this repository at vercel.com/new. `index.py` is the entry point; no build settings are needed.
+2. In the project's **Storage** tab, add a **Neon** Postgres database and connect it. It sets `DATABASE_URL`, and tables are created on the first request.
+3. Under **Settings → Environment Variables**, add `GEMINI_API_KEY` (optional: without it, photos fall back to manual entry), then redeploy.
+
+On Vercel, Medora reads the visitor's address and https from the proxy headers, writes its vision cache to `/tmp`, and shrinks photos in the browser to stay under the 4.5 MB upload limit. Draft photos and rate limits live in memory, so they are per instance.
 
 ## Design guarantees
 
