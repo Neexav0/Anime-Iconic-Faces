@@ -31,7 +31,7 @@
     {% endif %}
     {% if draft.origin == 'photo' %}
     <aside class="photo stack">
-      {% if has_image %}<img src="/draft-image/{{ draft.id }}" alt="Photo of the medicine pack you uploaded">{% endif %}
+      <img id="pack-photo" {% if has_image %}src="/draft-image/{{ draft.id }}"{% endif %} alt="Photo of the medicine pack you uploaded" hidden>
       {% if x %}
       <div class="card stack small">
         <b>{{ t('read_from_pack') }}</b>
@@ -125,7 +125,23 @@
 {% endblock %}
 {% block scripts %}
 <script>
-const T = {{ {'recognised_as': t('recognised_as'), 'not_recognised': t('not_recognised'), 'did_you_mean': t('did_you_mean'), 'no_catalogue': t('no_catalogue')}|tojson }};
+// Show the uploaded photo: the server's in-memory copy if this instance has it, else the small copy the
+// Add page kept in this tab. Hidden until something loads, so a missing photo never shows as broken.
+(() => {
+  const ph = document.getElementById('pack-photo');
+  if (!ph) return;
+  let local = null;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('medora-photo') || 'null');
+    if (saved && saved.url && Date.now() - saved.at < 30 * 60 * 1000) local = saved.url;
+  } catch (e) {}
+  const fallBack = () => { if (local && ph.src !== local) ph.src = local; else ph.remove(); };
+  ph.addEventListener('load', () => { ph.hidden = false; });
+  ph.addEventListener('error', fallBack);
+  if (!ph.getAttribute('src')) fallBack();
+  else if (ph.complete && ph.naturalWidth === 0) fallBack();
+})();
+const T ={{ {'recognised_as': t('recognised_as'), 'not_recognised': t('not_recognised'), 'did_you_mean': t('did_you_mean'), 'no_catalogue': t('no_catalogue')}|tojson }};
 const $ = s => document.querySelector(s);
 const rows = $('#rows'), nameIn = $('#name'), brandId = $('#brand_id'), sugg = $('#sugg'), xc = $('#xcheck'), useCat = $('#use-cat');
 let candidates = [], selected = null, recCache = {};

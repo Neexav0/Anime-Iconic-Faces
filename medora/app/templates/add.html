@@ -67,6 +67,18 @@ async function shrink(file) {
     return blob && blob.size < file.size ? new File([blob], 'label.jpg', { type: 'image/jpeg' }) : file;
   } catch (e) { return file; }  // e.g. a format the browser cannot decode: send as is
 }
+// Keep a small copy in this tab only (sessionStorage), so the check page can show the photo even when
+// a serverless host answers from an instance that never saw the upload. It never leaves the device.
+async function rememberPreview(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 900 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    sessionStorage.setItem('medora-photo', JSON.stringify({ url: c.toDataURL('image/jpeg', 0.8), at: Date.now() }));
+  } catch (e) { try { sessionStorage.removeItem('medora-photo'); } catch (_) {} }
+}
 input.addEventListener('change', async () => {
   const f = input.files[0];
   if (!f) return;
@@ -75,6 +87,7 @@ input.addEventListener('change', async () => {
   btn.disabled = true;
   const small = await shrink(f);
   if (small !== f) { const dt = new DataTransfer(); dt.items.add(small); input.files = dt.files; }
+  await rememberPreview(small);
   btn.disabled = false; btn.focus();
 });
 form.addEventListener('submit', () => { form.classList.add('busy'); btn.disabled = true; });
