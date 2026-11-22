@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start MySQL",
+      "type": "shell",
+      "command": "if (-not (Test-NetConnection 127.0.0.1 -Port 3306 -WarningAction SilentlyContinue).TcpTestSucceeded) { Start-Process powershell -ArgumentList '-ExecutionPolicy','Bypass','-File','${workspaceFolder}\\scripts\\start-mysql.ps1' -WindowStyle Minimized; Start-Sleep -Seconds 6 }; 'MySQL ready'",
+      "options": { "shell": { "executable": "powershell.exe", "args": ["-NoProfile", "-Command"] } },
+      "presentation": { "reveal": "silent" },
+      "problemMatcher": []
+    }
+  ]
+}
