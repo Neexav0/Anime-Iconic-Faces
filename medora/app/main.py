@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import contextvars
 import io
 import zlib
@@ -20,6 +21,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.concurrency import run_in_threadpool
+from sqlalchemy import delete as sql_delete
+from sqlalchemy import update as sql_update
 from sqlalchemy import select
 
 from . import vision
@@ -578,18 +581,31 @@ def delete_patient_data(s, p: Patient) -> None:
 
 
 def purge_old_demos() -> None:
+    """Best-effort housekeeping at startup. It must never stop the site from starting:
+    a failure is logged and the app carries on."""
+    try:
+        _purge_old_demos()
+    except Exception:
+        logging.getLogger("medora").exception("Demo cleanup failed; continuing startup")
+
+
+def _purge_old_demos() -> None:
     cutoff = datetime.now() - timedelta(days=2)
     with SessionLocal() as s:
-        for acc in s.scalars(select(Account).where(Account.is_demo.is_(True), Account.created_at < cutoff)):
-            for p in s.scalars(select(Patient).where(Patient.account_id == acc.id)):
-                delete_patient_data(s, p)
-            for sess in s.scalars(select(AuthSession).where(AuthSession.account_id == acc.id)):
-                s.delete(sess)
-            s.delete(acc)
-        for sess in s.scalars(select(AuthSession).where(AuthSession.expires_at < datetime.now())):
-            s.delete(sess)
-        for d in s.scalars(select(Draft).where(Draft.created_at < datetime.now() - timedelta(days=1))):
-            s.delete(d)
+        old_ids = list(s.scalars(select(Account.id).where(Account.is_demo.is_(True), Account.created_at < cutoff)))
+        # Explicit, ordered deletes: children before parents. The models have no ORM relationships, so an
+        # unordered flush could delete an account before its rows (it tripped auth_sessions_account_id_fkey).
+        for acc_id in old_ids:
+            pids = list(s.scalars(select(Patient.id).where(Patient.account_id == acc_id)))
+            if pids:
+                for model in (Entry, Review, Draft):
+                    s.execute(sql_delete(model).where(model.patient_id.in_(pids)))
+                s.execute(sql_update(AuthSession).where(AuthSession.patient_id.in_(pids)).values(patient_id=None))
+                s.execute(sql_delete(Patient).where(Patient.id.in_(pids)))
+            s.execute(sql_delete(AuthSession).where(AuthSession.account_id == acc_id))
+            s.execute(sql_delete(Account).where(Account.id == acc_id))
+        s.execute(sql_delete(AuthSession).where(AuthSession.expires_at < datetime.now()))
+        s.execute(sql_delete(Draft).where(Draft.created_at < datetime.now() - timedelta(days=1)))
         s.commit()
 
 
